@@ -2,13 +2,13 @@
 """Model config in json format"""
 import numpy as np
 Npulsars = 5
-np.random.seed(0)
+np.random.seed(4)
 canonical = {
 
     "timing_parameters": {
-         "T_years" : 10,        #how long to integrate for in years
-         "dt_days": 7,         #sampling interval in days
-         "Npulsars":Npulsars   #number of pulsars in PTA
+         "T_years" : 10,        # how long to integrate for in years
+         "dt_days": 7,          # sampling interval in days
+         "Npulsars":Npulsars    # number of pulsars in PTA
           },
 
     "pulsar_parameters": {
@@ -21,15 +21,15 @@ canonical = {
           },
 
     "GW_parameters": {
-         "omega_GW" : 1e-8,
+         "omega_GW" : 1e-7,
          "phase_normalisation": 0.20,  
          "psi_GW":np.random.uniform(low=0.0, high=np.pi*2),
          "iota":np.random.uniform(low=-np.pi/2, high=np.pi/2),
          "dec_GW":np.random.uniform(low=-np.pi/2, high=np.pi/2),
          "ra_GW":np.random.uniform(low=0.0, high=2*np.pi),
-         "m1":4e9,
-         "m2":3e9,
-         "Dl":0.010 #Gpc
+         "m1":4e12,
+         "m2":3e12,
+         "Dl":0.0010 #Gpc
           },
 
 

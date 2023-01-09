@@ -65,7 +65,7 @@ class PulsarFrequencyObservations:
         Agw             = 2 * chirp_mass**(5/3)/Dl * (np.pi*f_gw)**(2/3) #amplitude parameter
         convert_to_SI   = G**(5/3) * c**(-4.0)
         Agw             = Agw*convert_to_SI # this is now a dimensionless quantity
-
+        print(f"The magnitude of the GW strain using these parameters is: {Agw}")
 
         #Get the evolution of the intrinsic pulsar frequency by solving the Ito integral
         self.state_frequency = sdeint.itoint(self._frequency_ODE_f,self._frequency_ODE_g, self.f_psr, self.t)
@@ -113,7 +113,7 @@ class PulsarFrequencyObservations:
         measurement_noise = np.random.normal(0, self.measurement_noise,f_measured.shape) # Measurement noise
         
         #...and add it to every observation
-        self.observations = f_measured#+measurement_noise
+        self.observations = f_measured+measurement_noise
         self.observations_noiseless  = f_measured
 
 

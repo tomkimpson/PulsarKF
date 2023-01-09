@@ -22,7 +22,7 @@ class UnscentedKalmanFilter:
     def __init__(self,n_states,observations):
 
         self.L = n_states 
-        self.observations = observations
+        self.observations = observations.observations #The actual noisy data recorded by an observer
         
         
         #Initialise some constants of the class
@@ -55,7 +55,7 @@ class UnscentedKalmanFilter:
         #Overwrite the 0th elements
         self.Wm[0] = lamda / (self.L + lamda)
         self.Wc[0] = lamda / (self.L + lamda) + (1.0 - self.alpha**2 + self.beta)
-        self.gamma = np.sqrt(self.nstates + lamda)
+        self.gamma = np.sqrt(self.L + lamda)
 
     def _calculate_sigma_points(self):
 
@@ -77,11 +77,6 @@ class UnscentedKalmanFilter:
         P_sqrt = matrix_sqrt(self.P) 
         for i in range(1,self.L): self.chi[i] = self.x +(self.gamma * P_sqrt[i,:])
 
-
-
-
-        
-
     def ll_on_data(self):
 
         """
@@ -101,7 +96,11 @@ class UnscentedKalmanFilter:
         self._calculate_weights()
 
 
+        for observation in self.observations:
+            #print(observation)
 
+            self._calculate_sigma_points()
+            
 
 
 
