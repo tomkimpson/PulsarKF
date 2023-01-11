@@ -1,5 +1,7 @@
 from UKF import UnscentedKalmanFilter
 from create_synthetic_data import PulsarFrequencyObservations
+from model import * 
+
 
 from configs.config import canonical as cfg
 import numpy as np
@@ -17,6 +19,17 @@ observations.create_observations(cfg["pulsar_parameters"],cfg["GW_parameters"],c
 
 #Now let's run the UKF on this data
 n_states = observations.Npulsars + 1 #N psr frequencies + GW phase
-x = UnscentedKalmanFilter(n_states=n_states,observations=observations)
-x.ll_on_data()
+KF = UnscentedKalmanFilter(n_states=n_states,
+                           observations=observations,
+                           Q = Q_function,
+                           F = F_function,
+                           H = H_function
+                           )
+
+
+parameters = {"omega":observations.omega_GW,
+              "gamma":observations.spindown_gamma[0],
+              "n":observations.spindown_n[0],
+             }
+KF.ll_on_data(parameters)
 
