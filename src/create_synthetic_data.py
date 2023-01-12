@@ -19,9 +19,6 @@ class PulsarFrequencyObservations:
         self.t = t 
         self.dt = t[1] - t[0]
 
-
-
-
     def _frequency_ODE_f(self,x,t):
         return -self.spindown_gamma * x**self.spindown_n
 
@@ -62,10 +59,10 @@ class PulsarFrequencyObservations:
         m2              = GW_parameters["m2"]*Msolar            # mass of object 2 in kg
         chirp_mass      =  m1**(3/5) * m2**(3/5)/(m1+m2)**(1/5) #chirp mass in kg
         Dl              =  GW_parameters["Dl"]*1e9 * pc         #distance, converted from Gpc to m
-        Agw             = 2 * chirp_mass**(5/3)/Dl * (np.pi*f_gw)**(2/3) #amplitude parameter
+        self.Agw             = 2 * chirp_mass**(5/3)/Dl * (np.pi*f_gw)**(2/3) #amplitude parameter
         convert_to_SI   = G**(5/3) * c**(-4.0)
-        Agw             = Agw*convert_to_SI # this is now a dimensionless quantity
-        print(f"The magnitude of the GW strain using these parameters is: {Agw}")
+        self.Agw             = self.Agw*convert_to_SI # this is now a dimensionless quantity
+        print(f"The magnitude of the GW strain using these parameters is: {self.Agw}")
 
         #Get the evolution of the intrinsic pulsar frequency by solving the Ito integral
         self.state_frequency = sdeint.itoint(self._frequency_ODE_f,self._frequency_ODE_g, self.f_psr, self.t)
@@ -80,7 +77,7 @@ class PulsarFrequencyObservations:
         self.q              = pulsar_directions(np.pi/2.0 - self.dec_psr,self.ra_psr)           # Get the direction vector of the pulsar
         m,n                 = principal_axes(np.pi/2.0 - self.dec_gw,self.ra_gw,self.psi_gw)    # Get basis vectors of the GW 
         GW_direction_vector = np.cross(m,n)                                                     # The GW propagation direction
-        self.hp,self.hx     = h_amplitudes(Agw,self.iota_gw)                                    # The GW amplitudes 
+        self.hp,self.hx     = h_amplitudes(self.Agw,self.iota_gw)                                    # The GW amplitudes 
         eplus,ecross        = polarisation_basis(m,n)                                           # The polarization basis  
         hplus,hcross        = self.hp*np.cos(self.state_phase),self.hx*np.sin(self.state_phase) # The time varying plus and cross GW strains
 

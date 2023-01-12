@@ -2,7 +2,7 @@
 
 import numpy as np 
 from scipy.linalg import sqrtm as matrix_sqrt
-
+import sys
 class UnscentedKalmanFilter:
 
     """
@@ -16,13 +16,9 @@ class UnscentedKalmanFilter:
     """
 
 
-    #Constants 
 
 
-    def __init__(self,n_states,observations,Q, F,H):
-
-#propagate_sigma_points_function = this is just ODE solution
-
+    def __init__(self,n_states,observations,model):
 
 
         self.L = n_states 
@@ -36,28 +32,45 @@ class UnscentedKalmanFilter:
         
         
 
-        self.Q_function = Q 
-        self.F_function = F
-        self.H_function = H
+        self.initialise_model = model.initialize_global_quantities
+        self.Q_function = model.Q_function
+        self.F_function = model.F_function
+        self.H_function = model.H_function
         
-    def _predict(self):
+    def _predict(self,sigma_points):
 
         #See Eq 17/18 from Wan/Van
 
-
-        self.x_predicted = sum(self.Wm* self.sigma_points)
-
-        delta = self.sigma_points - self.x_predicted
         
-        print (self.x_predicted.shape)
-        print (self.sigma_points.shape)
-        print(delta.shape)
-        print(self.Wc.shape)
-        self.P_predicted = sum(self.Wc * np.outer(delta,delta) ) + self.Q
+        x_predicted  = (sigma_points * self.Wm[:, None]).sum(axis=0) #This is Equation 17 from Wan/Van
+        
+        P_predicted = self._calculate_covariance(x_predicted,sigma_points,x_predicted,sigma_points,self.Wc)
 
-    def _update(self):
+
+        return x_predicted, P_predicted + self.Q
+
+
+
+    def _update(self,observation):
 
         #see O'leary and Measurement equations section of paper
+        print ("THIS IS THTE UPDATE STEP")
+
+
+        innovation = self.y_predicted - observation
+        
+        Pxy = self._calculate_covariance(self.x_predicted,
+                                         self.sigma_points_x,
+                                         self.y_predicted,
+                                         self.sigma_points_y,
+                                         self.Wc) 
+        print(1)
+        sys.exit()
+
+        
+
+
+
         return 1
 
     def _calculate_weights(self):
@@ -94,6 +107,7 @@ class UnscentedKalmanFilter:
         See Eq. 15 from Wav/Van
         """
 
+
         #Initialise the sigma vector
         self.chi = np.zeros((2*self.L + 1,self.L))
 
@@ -106,17 +120,41 @@ class UnscentedKalmanFilter:
         for i in range(self.L+1,2*self.L): self.chi[i,:] = x -(self.gamma * P_sqrt[i - self.L,:])
 
 
-    
+    def _calculate_covariance(self,a,a_covar,b,b_covar,weights):
+
+        """
+        Given two random vectors `a_covar`, `b_covar` (i.e. matrices corresponding to sigma vectors)
+        and the associated means  `a` and `b`, calculate cross-covariance matrix 
+        """
+
+        dim_a = len(a)
+        dim_b = len(b)
+        output = np.zeros((dim_a,dim_b)) 
+        
+        
+        delta_a = a_covar - a
+        delta_b = b_covar - b
+
+        #Todo: I'm sure there is an efficient way to vectorise this.
+        #Leaving explicit for now to make dimensions clear
+        for i in range(dim_a):
+            for j in range(dim_b):
+                scalar = 0.0
+                for k in range(2*self.L+1):
+                    scalar += weights[k]*delta_a[k,i]*delta_b[k,j].T 
+                output[i,j] = scalar
+
+        return output
+
 
     def ll_on_data(self,parameters):
 
         """
         External function
-
-
-
-
         """
+
+        #Initialize the model
+        self.initialise_model(parameters)
 
 
         #Initialise x and P
@@ -128,35 +166,71 @@ class UnscentedKalmanFilter:
 
 
         for observation in self.observations:
-            #print(observation)
-            print("Loading an observation")
-            
-            print ("Calculating sigma vector")
-            self._calculate_sigma_vectors(self.x,self.P) # Calculate sigma points, given the state variables 
-            print(self.chi.shape)
-            print ("Propagating sigma vector")
-            self.sigma_points = self.F_function(self.chi,parameters,self.dt)       # Propagate the sigma points
-            print(self.sigma_points.shape)
-            
-            
-            print("Getting Q function")
-            self.Q = self.Q_function()                  # Update the process noise covariance 
-            print("predict")
-            self._predict() # caveat if there are no observations at this time, state = predict NO UPDATE step
 
 
-            self._calculate_sigma_points(self.x_predicted)
-            self.measurement_operator_function() #this is 4th step in time update. 
-            self._update() 
+            # 1. Calculate sigma points, given the state variables 
+            self._calculate_sigma_vectors(self.x,self.P) 
+            
+            #2. Time update
+            
+            #2.1 Update the process noise covariance 
+            self.Q = self.Q_function() 
+
+
+            #2.1 Evolve the sigma points in time
+            self.sigma_points_x = self.F_function(self.chi,parameters,self.dt)       # Propagate the sigma points
+            
+            #2.2 Weighted state predictions and covariance
+            self.x_predicted, self.P_xx = self._predict(self.sigma_points_x) # For the general case there is a caveat if there are no observations at this time, state = predict NO UPDATE step
+
+            #print("x pred:", self.x_predicted)
+            #print("P pred:", self.P_xx)
+            #2.3 Update the sigma vectors using these new predictions of the state/covariance
+            #---i.e. this updates self.chi
+            self._calculate_sigma_vectors(self.x_predicted,self.P_xx)
+            
+            #2.4 Evolve these new sigma vectors according to the measurement function
+            #--- note that the dimensions of self.sigma_points_x and  self.sigma_points_y are different!
+            print("----------------measurement----------------------")
+            self.sigma_points_y = self.H_function(self.chi,parameters) # this is 4th step in time update. 
+            
+            #2.5 Weighted state predictions and covariance
+            self.y_predicted, self.P_yy = self._predict(self.sigma_points_y) # 
+            
+
+            #3. Measurement update
+            self._update(observation) 
             #
 
 
-            #at t=0, prop sigmas = sigmas already calculated (not compulsoary)
-
-            #o
 
 
-    #def _predict(self):
 
 
-    #def _update(self)
+
+
+
+
+
+
+
+###--------------Scratch space
+
+        #This is a convoluted, but explicit way of doing the summation.
+        #Todo: check dimensionality with Joe and make more concise 
+        # self.P_predicted = np.zeros_like(self.P)
+        # for i in range(self.L):
+            
+        #     delta = sigma_points - x_predicted[i,None]
+            
+        #     tmp_array = np.zeros((2*self.L+1, self.L))
+        #     for j in range(2*self.L+1):
+        #         tmp_array[j,:] =self.Wc[j]*delta[j,:]*delta[j,:].T 
+              
+
+        #     self.P_predicted[i,:] = tmp_array.sum(axis=0)
+            
+        # #todo: where does the + Q come from? Can't see if defined in Wan/Van.
+        # #self.P_predicted = _calculate_covariance(self,a,a_covar,b,b_covar,weights) + self.Q
+
+        # print("Original method is:", self.P_predicted)
