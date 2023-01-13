@@ -63,7 +63,6 @@ class MelatosPTAModel:
         gamma = parameters["gamma"]
         n     = parameters["n"]
 
-    
         nrows = x.shape[0]
         ncols = x.shape[1]
         output = np.zeros_like(x) #thee output should have the same shape as the input, `x`
@@ -74,12 +73,15 @@ class MelatosPTAModel:
             df[0] = omega 
             for i in range(1,len(x)):
                 df[i] = -gamma*x[i]**n
+
+
             return df
 
     
         for i in range(nrows): # for every sigma vector
             out_row = odeint(f,x[i,:],[0,dt])[-1]
             output[i,:] = out_row
+
 
         return output
 
@@ -133,13 +135,18 @@ class MelatosPTAModel:
 
 
 
+    def Q_function(self,dt):
+  
+
+        Q =  np.zeros((self.dims_x,self.dims_x)) 
+        for i in range(1,self.dims_x):
+            Q[i,i] = 0.001**2 *  dt
+
+        return Q
 
 
-
-
-
-    def Q_function(self):
-        return 0
+    def R_function(self): #this could also be defined in the observations class...
+        return 1e-10
 
 
 

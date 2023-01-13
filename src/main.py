@@ -36,8 +36,8 @@ model = MelatosPTAModel(observations.Npulsars + 1,observations.Npulsars,dictiona
 
 
 #Now let's run the UKF on this data
-n_states = observations.Npulsars + 1 #N psr frequencies + GW phase
-KF = UnscentedKalmanFilter(n_states=n_states,
+#n_states = observations.Npulsars + 1 #N psr frequencies + GW phase
+KF = UnscentedKalmanFilter(
                            observations=observations,
                            model = model
                            )
