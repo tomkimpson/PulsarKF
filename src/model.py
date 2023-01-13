@@ -140,7 +140,7 @@ class MelatosPTAModel:
 
         Q =  np.zeros((self.dims_x,self.dims_x)) 
         for i in range(1,self.dims_x):
-            Q[i,i] = 0.001**2 *  dt
+            Q[i,i] = 0.00**2 *  dt
 
         return Q
 

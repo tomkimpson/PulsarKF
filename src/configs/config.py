@@ -34,7 +34,7 @@ canonical = {
 
 
     "noise_parameters":{#"process_noise": np.random.uniform(low=0.001, high=0.002, size=(Npulsars,)),  
-                         "process_noise": np.ones(Npulsars)*0.001,      
+                         "process_noise": np.ones(Npulsars)*0.00,      
                          "measurement_noise": 1e-15    # standard deviation gaussian measurement noise.
             }
 
