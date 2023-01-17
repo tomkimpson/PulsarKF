@@ -114,7 +114,7 @@ class PulsarFrequencyObservations:
         self.observations_noiseless  = f_measured
 
 
-    def plot_observations(self,psr_index):
+    def plot_observations(self,psr_index,KF_predictions):
 
         h,w = 10,10
         rows = 4
@@ -124,13 +124,19 @@ class PulsarFrequencyObservations:
         tplot = self.t / (60*60*24*365)
         #GW phase
         ax1.plot(tplot,self.state_phase)
+        if KF_predictions is not None:
+            ax1.plot(tplot,KF_predictions[:,0])
         ax1.set_ylabel(r'$\Phi$')
 
         #Intrinsic pulsar frequency
         if psr_index is None:
             ax2.plot(tplot,self.state_frequency)
+            if KF_predictions is not None:
+                ax2.plot(tplot,KF_predictions[:,1:]) #exlude the phase
         else:
             ax2.plot(tplot,self.state_frequency[:,psr_index])
+            if KF_predictions is not None:
+                ax2.plot(tplot,KF_predictions[:,psr_index+1]) #the 0th pulsar corresponds to the 1st element of the state
 
         ax2.set_ylabel(r'$f_p$ [Hz]')
 
@@ -138,14 +144,17 @@ class PulsarFrequencyObservations:
         if psr_index is None:
             ax3.plot(tplot,self.observations)
         else:
-            ax3.plot(tplot,self.observations[:,psr_index])
+            #ax3.plot(tplot,self.observations[:,psr_index])
+            g = np.gradient(self.observations[:,psr_index])
+            #g = g / g[0] * self.observations[0,psr_index]
+            ax3.plot(tplot,g)
         ax3.set_ylabel(r'$f_M$ [Hz]')
 
         #Difference
         if psr_index is None:
             ax4.plot(tplot,self.observations-self.state_frequency)
         else:
-            ax3.plot(tplot,self.observations[:,psr_index] - self.state_frequency[:,psr_index])
+            ax4.plot(tplot,self.observations[:,psr_index] - self.state_frequency[:,psr_index])
         
         ax4.set_ylabel(r'$\Delta$')
         ax4.set_xlabel('t [years]')

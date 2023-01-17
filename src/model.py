@@ -46,7 +46,8 @@ class MelatosPTAModel:
         self.GW_direction_vector = np.cross(self.m,self.n)
         self.hp,self.hx          = h_amplitudes(parameters["Agw"],parameters["iota_gw"]) 
 
-
+        self.gamma = parameters["gamma"]
+        self.n     = parameters["gamma"]
 
 
 
@@ -57,6 +58,8 @@ class MelatosPTAModel:
 
         User defined function that should take the state `x` and advance it by
         `dt`, subject to some `parameters`
+
+        The state here is actually the sigma pints
         """
 
         omega = parameters["omega"]
@@ -74,7 +77,7 @@ class MelatosPTAModel:
             for i in range(1,len(x)):
                 df[i] = -gamma*x[i]**n
 
-
+            #print("df = ", df)
             return df
 
     
@@ -82,6 +85,10 @@ class MelatosPTAModel:
             out_row = odeint(f,x[i,:],[0,dt])[-1]
             output[i,:] = out_row
 
+        #print(x.shape)
+        #print("Initial state:",x[:,1] )
+        #print("New state:", output[:,1])
+        #sys.exit()
 
         return output
 
@@ -94,7 +101,7 @@ class MelatosPTAModel:
 
         nrows = x.shape[0] #2L + 1
         ncols = x.shape[1] # L
-        output = np.zeros((nrows,self.dims_z)) 
+        
 
         
         #Get the hplus and hcross strains for each 2L + 1 phase 
@@ -135,18 +142,25 @@ class MelatosPTAModel:
 
 
 
-    def Q_function(self,dt):
+    def Q_function(self,x,dt):
   
 
         Q =  np.zeros((self.dims_x,self.dims_x)) 
-        for i in range(1,self.dims_x):
-            Q[i,i] = 0.00**2 *  dt
 
-        return Q
+        # sigma = 1e-5
+
+        # for i in range(1,self.dims_x):
+        #     Q[i,i] = sigma**2*dt*(1-self.gamma*(self.n-1)*dt*x[i]**(self.n-1))
+        
+        for i in range(1,self.dims_x):
+            Q[i,i] = 0.001
+
+      
+        return Q 
 
 
     def R_function(self): #this could also be defined in the observations class...
-        return 1e-10
+        return 0.0
 
 
 

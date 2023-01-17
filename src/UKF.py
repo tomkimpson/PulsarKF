@@ -37,43 +37,27 @@ class UnscentedKalmanFilter:
         self.kappa = 0    # An extra scaling parameter. O'Leary uses 3-n_states, Wan/Merwe recommend =0
         
         
-
+        #Initialise the functions defined by the model
         self.initialise_model = model.initialize_global_quantities
-        self.Q_function = model.Q_function
-        self.F_function = model.F_function
-        self.H_function = model.H_function
-        self.R = model.R_function()
-        
+        self.Q_function       = model.Q_function
+        self.F_function       = model.F_function
+        self.H_function       = model.H_function
+        self.R                = model.R_function()
+
     def _predict(self,sigma_points):
 
-        #See Eq 17/18 from Wan/Van
-        x_predicted  = (sigma_points * self.Wm[:, None]).sum(axis=0) #This is Equation 17 from Wan/Van
-        P_predicted = self._calculate_covariance(x_predicted,sigma_points,x_predicted,sigma_points,self.Wc) 
+        #See Eq 17/18 from Wan/Van     
+        x_predicted = np.dot(self.Wm, sigma_points)
+        
 
-        print("Dimensions of xvector are:", x_predicted.shape)
-        print("Dimensions of sigma points are:", sigma_points.shape)
-        print("Output from predict() symmetric?",la.issymmetric(P_predicted,atol=sys.float_info.epsilon))
-        for i in range(P_predicted.shape[0]):
-            for j in range(P_predicted.shape[-1]):
-                print(i,j,P_predicted[i,j],P_predicted[j,i])
-
-        #new = np.cov(sigma_points-x_predicted,aweights = self.Wc)
-
-
+        #This form combining dot products with diag of the weights array is taken from: https://github.com/rlabbe/filterpy/blob/3b51149ebcff0401ff1e10bf08ffca7b6bbc4a33/filterpy/kalman/UKF.py#L284
+        #Todo: caclulate diag(weights) ONCE
         y = sigma_points - x_predicted[np.newaxis, :]
-        new = np.dot(y.T, np.dot(np.diag(self.Wc), y))
+        P_predicted = np.dot(y.T,np.dot(np.diag(self.Wc),  y))
+        #P_predicted = 0.5*(P_predicted + P_predicted.T) + 1e-16*np.eye(len(P_predicted)) # Include this if your covariance matrices are causing isseus
 
 
-
-        print("Output from new predict() symmetric?",la.issymmetric(new,atol=sys.float_info.epsilon))
-        for i in range(new.shape[0]):
-            for j in range(new.shape[-1]):
-                print(i,j,new[i,j],new[j,i])
-            #print(row)
-        #sys.exit()
-
-
-        return x_predicted, P_predicted 
+        return x_predicted, P_predicted,y # return y as we will use it later when calculating cross correlation
 
     def _update(self,observation):
 
@@ -82,78 +66,48 @@ class UnscentedKalmanFilter:
         """
 
 
-        innovation =  observation - self.y_predicted 
-        
-        Pxy = self._calculate_covariance(self.x_predicted,
-                                         self.sigma_points_x,
-                                         self.y_predicted,
-                                         self.sigma_points_y,
-                                         self.Wc) 
+
+        #Get the cross correlation matrix
+
+        Pxy = np.dot(self.delta_y.T, np.dot(np.diag(self.Wc),self.delta_x))
 
 
-      
-        #self.P_yy = np.ones_like(self.P_yy) * np.random.uniform(0,1,size=self.P_yy.shape)
-        
-       # Pxy = np.ones_like(Pxy) * np.random.uniform(0,1,size=Pxy.shape)
-
-        #print("The new value of Pyy is:")
-        #print(self.P_yy)
-       
+        #Get the Kalman gain
         Q,R = np.linalg.qr(self.P_yy) #Don't confuse this Q,R decomposition with self.Q and self.R for the noises  
-        Qb = Pxy @ Q.T
-        KalmanGain = np.linalg.solve(R,Qb.T).T
-
-
-
-        #NEW METHOD 
-        print("KALMAN GAIN")
-        #print("SHAPS")
-        #print(Pxy.shape)
-        #print(self.P_yy.shape)
-        Kgain_new =Pxy @ np.linalg.inv(self.P_yy)
-
-        # K3 = Pxy @ np.linalg.inv(R) @ Q.T
-        # #K4 = 
-
-        # inverse1 = np.linalg.inv(self.P_yy)
-        # inverse2 = np.linalg.inv(R) @ Q.T
-        # #print("The inverse of Pyy is:", np.linalg.inv(self.P_yy))
-        # #print("The QR decomp of Pyy is:", np.linalg.inv(R) @ Q.T)
-        # print("LOOK HERE")
-        # #print(inverse1- inverse2)
+        Qb = np.dot(Q.T,Pxy)
+        K = np.linalg.solve(R,Qb).T #The transpose makes the shape appropriate for a dot product with the innovation below
+        #K_full_definition = Pxy.T @ np.linalg.inv(self.P_yy) #transpose just required for correct shapes
        
-        # print(Kgain_new - K3)
-        print(KalmanGain - Kgain_new)
-
-
-        sys.exit()
-
-
-
-
-
-
-
         
-        print ("Are these Kgains equal?", np.array_equal(Kgain_new,KalmanGain))
-        #print ("Are these Kgains equal?", Kgain_new == KalmanGain)
-        print(Kgain_new == K3)
-        print("the difference is:", KalmanGain - Kgain_new)
 
-        #Update the state and covariance
-        self.x = self.x_predicted + Kgain_new @ innovation
-        #self.P = self.P_xx - np.dot(Kgain_new, np.dot(self.P_yy,Kgain_new.T))
-        self.P = self.P_xx - Kgain_new @ self.P_yy @ Kgain_new.T
+
+
+
+        #Update the state and covariance estimates
+        innovation =  observation - self.y_predicted 
+
+
+        # print("ypred", self.y_predicted )
+        # print("innovation", innovation)
+        # print("matmul")
+        #blob = K @ innovation
+        #print(blob[1])
+        #sys.exit()
+
+
+
+
+        self.x = self.x_predicted + K @ innovation
+        self.P = self.P_xx - K @ self.P_yy @ K.T
 
         #Also return the likelihood
-        #likelihood = -0.5*(np.linalg.slogdet(self.P_yy)[1] + innovation.T @ np.linalg.solve(self.P_yy, innovation)+ len(observation) * np.log(2*np.pi))
-       
-
+        likelihood = -0.5*(np.linalg.slogdet(self.P_yy)[1] + innovation.T @ np.linalg.solve(self.P_yy, innovation)+ len(observation) * np.log(2*np.pi))
+        self.ll += likelihood
         
 
 
 
-        return 1.0 #likelihood
+        
 
     def _calculate_weights(self):
 
@@ -201,15 +155,14 @@ class UnscentedKalmanFilter:
         See Eq. 15 from Wav/Van
         """
 
-       
+
         #Check if the P matrix can be sqrted
-        epsilon = 1e-18
-        Pos_definite_Check= 0.5*(P + P.T) + epsilon*np.eye(len(x))
-        #print("Checking for postive definitenes of the P matrix")
-        #print ("PMatrix to be checked:")
-        #print(P)
-        U = la.cholesky(Pos_definite_Check, check_finite=True) #.T
-        #print(U)
+        #epsilon = sys.float_info.epsilon
+        #P_check = 0.5*(P + P.T) + epsilon*np.eye(len(x)) #uncomment these two lines if P sqrts are causing issues.
+        
+        P_check = P
+        P_sqrt = la.cholesky(P_check, check_finite=True)  #Cholesky is much faster than scipy.linalg.sqrtm
+       
 
         #Initialise the sigma vector
         self.chi = np.zeros((2*self.L + 1,self.L))
@@ -219,46 +172,11 @@ class UnscentedKalmanFilter:
 
         #Then iterate over the remaining elements
         #P_sqrt = matrix_sqrt(P) 
-        P_sqrt = U
+        #P_sqrt = U
         for i in range(1,self.L+1): 
             self.chi[i,:]          = x +(self.gamma * P_sqrt[i-1,:])
         for i in range(self.L+1,2*self.L+1): 
             self.chi[i,:] = x -(self.gamma * P_sqrt[i-1 - self.L,:])
-
-   
-
-    def _calculate_covariance(self,a,sigma_a,b,sigma_b,weights):
-
-        """
-        Given two random vectors `sigma_a`, `sigma_b` (i.e. matrices corresponding to sigma vectors)
-        and the associated means - `a` and `b` - calculate cross-covariance matrix. 
-        """
-
-        dim_a = len(a)
-        dim_b = len(b)
-        output = np.zeros((dim_a,dim_b)) 
-        
-        #print("dimensions:", dim_a, dim_b)
-        
-        delta_a = sigma_a - a
-        delta_b = (sigma_b - b).T
-
-        #print("shape of delta a", delta_a.shape)
-        #print("shape of delta b", delta_b.shape)
-
-
-        #Todo: I'm sure there is an efficient way to vectorise this.
-        #Leaving explicit for now to make dimensions clear
-        for i in range(dim_a):
-            for j in range(dim_b):
-                scalar = 0.0
-                #print(i,j)
-                for k in range(2*self.L+1):
-                    #print("K summation:", k)
-                    scalar += weights[k]*delta_a[k,i]*delta_b[j,k] 
-                output[i,j] = scalar
-
-        return output
 
     def ll_on_data(self,parameters):
 
@@ -269,41 +187,52 @@ class UnscentedKalmanFilter:
         #Initialize the model
         self.initialise_model(parameters)
 
+        #Initialise the array that will store the results
+        self.IO_array = np.zeros((len(self.observations),self.L))
 
         #Initialise x and P
         self.x = np.ones(self.L) # a column vector, length L
-        self.x[1:self.L] = 100.0 # Give a more reasonable guess for the psr frequencies
-        self.P = np.eye(self.L)#*1e-15*1e-5      # a square matrix, dim(L x L)   
+        self.x[0] = parameters["phi0"] #this is the only place this parameter comes in
+
+        self.x[1:self.L] = self.observations[0,:]# guess that the intrinsic frequency is the same as the measured frequancy
+
+        self.P = np.eye(self.L)*10 # a square matrix, dim(L x L). #How to initialise?
 
         #Determine the weights for the UKF. This only needs to be done once.
         self._calculate_weights()
 
+        #Initialise the likelihood
+        self.ll = 0
 
+        i = 0 # a useful counter
         for observation in self.observations:
-            print("Observation:", observation)
+            #print(f"Observation number {i} ", observation)
         
             # 1. Calculate sigma points, given the state variables 
-            print("CALCULATING SIGMA VECTORS")
             self._calculate_sigma_vectors(self.x,self.P) 
            
-            print("P is symmetric?",la.issymmetric(self.P))
+            
+           
             # 2. Time update
             
             # 2.1 Update the process noise covariance 
             #---at the moment for our problem Q is constant in time, leaving it here anyway
-            self.Q = self.Q_function(self.dt) 
+            self.Q = self.Q_function(self.x,self.dt) 
 
             # 2.1 Evolve the sigma points in time
             self.sigma_points_x = self.F_function(self.chi,parameters,self.dt)       
             
             # 2.2 Weighted state predictions and covariance
-            #print("predict step 1")
-            self.x_predicted, self.P_xx = self._predict(self.sigma_points_x) 
+            self.x_predicted, self.P_xx,self.delta_x = self._predict(self.sigma_points_x) 
+            #print(np.diagonal(self.P_xx))
+            #print(self.Q)
             self.P_xx += self.Q
-            print("P_xx is symmetric?",la.issymmetric(self.P_xx))
+            #print('---------------')
 
             # 2.3 Update the sigma vectors using these new predictions of the state/covariance
             #---i.e. this updates self.chi
+            #Todo: Do we need this step? Seems to be slightly conflicting advice in the literature.
+            #Joe's nice working code does incldue this step See also e.g. 
             #self._calculate_sigma_vectors(self.x_predicted,self.P_xx)
             
             # 2.4 Evolve these new sigma vectors according to the measurement function
@@ -311,16 +240,24 @@ class UnscentedKalmanFilter:
             self.sigma_points_y = self.H_function(self.chi,parameters) # this is 4th step in time update. 
             
             # 2.5 Weighted state predictions and covariance
-            #print("predict step 2")
-            self.y_predicted, self.P_yy = self._predict(self.sigma_points_y) # 
-            self.P_yy += self.R
-            print("P_yy is symmetric?",la.issymmetric(self.P_yy))
-
+            self.y_predicted, self.P_yy,self.delta_y = self._predict(self.sigma_points_y) # 
+            self.P_yy #+= self.R
+            
             # 3. Measurement update
             self._update(observation) 
 
+            #Do some IO
+            self.IO_array[i,:] = self.x
+            
 
-            #sys.exit()
+            i += 1
+
+            # if i > 100:
+            #     self.IO_array[i:,:] = self.x
+            #     return 
+        
+
+        return self.ll
             
 
 
@@ -335,23 +272,5 @@ class UnscentedKalmanFilter:
 
 
 
-###--------------Scratch space
 
-        #This is a convoluted, but explicit way of doing the summation.
-        #Todo: check dimensionality with Joe and make more concise 
-        # self.P_predicted = np.zeros_like(self.P)
-        # for i in range(self.L):
-            
-        #     delta = sigma_points - x_predicted[i,None]
-            
-        #     tmp_array = np.zeros((2*self.L+1, self.L))
-        #     for j in range(2*self.L+1):
-        #         tmp_array[j,:] =self.Wc[j]*delta[j,:]*delta[j,:].T 
-              
 
-        #     self.P_predicted[i,:] = tmp_array.sum(axis=0)
-            
-        # #todo: where does the + Q come from? Can't see if defined in Wan/Van.
-        # #self.P_predicted = _calculate_covariance(self,a,a_covar,b,b_covar,weights) + self.Q
-
-        # print("Original method is:", self.P_predicted)
