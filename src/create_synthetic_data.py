@@ -3,7 +3,7 @@ import sdeint
 import matplotlib.pyplot as plt 
 from GW import * 
 from universal_constants import * 
-
+import sys 
 class PulsarFrequencyObservations:
 
 
@@ -81,6 +81,7 @@ class PulsarFrequencyObservations:
         eplus,ecross        = polarisation_basis(m,n)                                           # The polarization basis  
         hplus,hcross        = self.hp*np.cos(self.state_phase),self.hx*np.sin(self.state_phase) # The time varying plus and cross GW strains
 
+
         h_t = np.zeros((3,3,len(self.t))) #the 3x3 h_ij matrix at each moment in time 
         for i in range(len(self.t)):
             hp, hx = hplus[i],hcross[i]       # get the GW amplitudes at t
@@ -103,6 +104,7 @@ class PulsarFrequencyObservations:
                 
             
             dot_product = 1 + np.dot(GW_direction_vector,qvec)
+            
             GW_factor = np.real(1.0 - 0.5*h_scalar/dot_product *(1 - np.exp(1j*self.omega_GW*d*dot_product/c)))
             f_measured[:,k] = fpulsar * GW_factor 
 
@@ -112,9 +114,23 @@ class PulsarFrequencyObservations:
         #...and add it to every observation
         self.observations = f_measured+measurement_noise
         self.observations_noiseless  = f_measured
+        
+    def _log_likelihood(self):
 
+        #Todo
+
+        return 1
+    
+      
+        
 
     def plot_observations(self,psr_index,KF_predictions):
+
+
+        """
+        Function to plot both the observations and the state predictions of the Kalman filter
+        To plot a parrticular pulsar, provide a psr_index
+        """
 
         h,w = 10,10
         rows = 4
@@ -122,6 +138,7 @@ class PulsarFrequencyObservations:
         fig, (ax1,ax2,ax3,ax4) = plt.subplots(nrows=rows, ncols=cols, figsize=(h,w),sharex=True)
         
         tplot = self.t / (60*60*24*365)
+
         #GW phase
         ax1.plot(tplot,self.state_phase)
         if KF_predictions is not None:
@@ -133,10 +150,13 @@ class PulsarFrequencyObservations:
             ax2.plot(tplot,self.state_frequency)
             if KF_predictions is not None:
                 ax2.plot(tplot,KF_predictions[:,1:]) #exlude the phase
+
         else:
             ax2.plot(tplot,self.state_frequency[:,psr_index])
             if KF_predictions is not None:
                 ax2.plot(tplot,KF_predictions[:,psr_index+1]) #the 0th pulsar corresponds to the 1st element of the state
+
+            ax2.set_ylim((1-1e-6)*np.min(self.state_frequency[:,psr_index]),(1+1e-6)*np.max(self.state_frequency[:,psr_index]))
 
         ax2.set_ylabel(r'$f_p$ [Hz]')
 
@@ -144,10 +164,10 @@ class PulsarFrequencyObservations:
         if psr_index is None:
             ax3.plot(tplot,self.observations)
         else:
-            #ax3.plot(tplot,self.observations[:,psr_index])
-            g = np.gradient(self.observations[:,psr_index])
+            ax3.plot(tplot,self.observations[:,psr_index])
+            #g = np.gradient(self.observations[:,psr_index])
             #g = g / g[0] * self.observations[0,psr_index]
-            ax3.plot(tplot,g)
+            #ax3.plot(tplot,g)
         ax3.set_ylabel(r'$f_M$ [Hz]')
 
         #Difference

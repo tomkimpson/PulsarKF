@@ -11,7 +11,7 @@ class BilbyLikelihood(bilby.Likelihood):
         self.model = model
         
     def log_likelihood(self):
-        ll = self.parameters["omega"] / 1e-7 #self.model.ll_on_data(self.parameters)
+        ll = self.model.ll_on_data(self.parameters)
         return ll
 
 

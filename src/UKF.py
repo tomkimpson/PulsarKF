@@ -4,8 +4,6 @@ import numpy as np
 from scipy.linalg import sqrtm as matrix_sqrt
 from scipy.linalg import qr #as qr_decomposition
 import scipy.linalg as la
-import random
-from pprint import pprint
 import sys
 class UnscentedKalmanFilter:
 
@@ -32,8 +30,8 @@ class UnscentedKalmanFilter:
         
         
         #Initialise some constants of the class
-        self.alpha = 7e-4 # O'Leary uses 7e-4, Wan/Merwe recommend something generally small. e.g. 1e-3
-        self.beta  = 2    # Beta incorporates prior knowledge of th distribution of x. For Guassians, beta=2 is optimal
+        self.alpha = 7 #7e-3 # O'Leary uses 7e-4, Wan/Merwe recommend something generally small. e.g. 1e-3
+        self.beta  = 2    # Beta incorporates prior knowledge of the distribution of x. For Guassians, beta=2 is optimal
         self.kappa = 0    # An extra scaling parameter. O'Leary uses 3-n_states, Wan/Merwe recommend =0
         
         
@@ -47,9 +45,10 @@ class UnscentedKalmanFilter:
     def _predict(self,sigma_points):
 
         #See Eq 17/18 from Wan/Van     
-        x_predicted = np.dot(self.Wm, sigma_points)
+        x_predicted = np.dot(self.Wm, sigma_points)#tmp = self.Wm.reshape(13,1), equivalent to np.sum(sigma_points*tmp,axis=0)
         
-
+        
+       
         #This form combining dot products with diag of the weights array is taken from: https://github.com/rlabbe/filterpy/blob/3b51149ebcff0401ff1e10bf08ffca7b6bbc4a33/filterpy/kalman/UKF.py#L284
         #Todo: caclulate diag(weights) ONCE
         y = sigma_points - x_predicted[np.newaxis, :]
@@ -68,7 +67,6 @@ class UnscentedKalmanFilter:
 
 
         #Get the cross correlation matrix
-
         Pxy = np.dot(self.delta_y.T, np.dot(np.diag(self.Wc),self.delta_x))
 
 
@@ -79,23 +77,10 @@ class UnscentedKalmanFilter:
         #K_full_definition = Pxy.T @ np.linalg.inv(self.P_yy) #transpose just required for correct shapes
        
         
-
-
-
-
         #Update the state and covariance estimates
         innovation =  observation - self.y_predicted 
 
-
-        # print("ypred", self.y_predicted )
-        # print("innovation", innovation)
-        # print("matmul")
-        #blob = K @ innovation
-        #print(blob[1])
-        #sys.exit()
-
-
-
+    
 
         self.x = self.x_predicted + K @ innovation
         self.P = self.P_xx - K @ self.P_yy @ K.T
@@ -104,8 +89,6 @@ class UnscentedKalmanFilter:
         likelihood = -0.5*(np.linalg.slogdet(self.P_yy)[1] + innovation.T @ np.linalg.solve(self.P_yy, innovation)+ len(observation) * np.log(2*np.pi))
         self.ll += likelihood
         
-
-
 
         
 
@@ -156,11 +139,16 @@ class UnscentedKalmanFilter:
         """
 
 
+
+
+
+
+
         #Check if the P matrix can be sqrted
         #epsilon = sys.float_info.epsilon
-        #P_check = 0.5*(P + P.T) + epsilon*np.eye(len(x)) #uncomment these two lines if P sqrts are causing issues.
-        
+        #P_check = 0.5*(P + P.T) + epsilon*np.eye(len(x)) #uncomment these two lines, and comment out P_check=P, if P sqrts are causing issues.
         P_check = P
+        
         P_sqrt = la.cholesky(P_check, check_finite=True)  #Cholesky is much faster than scipy.linalg.sqrtm
        
 
@@ -169,10 +157,7 @@ class UnscentedKalmanFilter:
 
         #The 0th element is just the mean
         self.chi[0,:] = x
-
-        #Then iterate over the remaining elements
-        #P_sqrt = matrix_sqrt(P) 
-        #P_sqrt = U
+       
         for i in range(1,self.L+1): 
             self.chi[i,:]          = x +(self.gamma * P_sqrt[i-1,:])
         for i in range(self.L+1,2*self.L+1): 
@@ -196,8 +181,8 @@ class UnscentedKalmanFilter:
 
         self.x[1:self.L] = self.observations[0,:]# guess that the intrinsic frequency is the same as the measured frequancy
 
-        self.P = np.eye(self.L)*10 # a square matrix, dim(L x L). #How to initialise?
-
+        self.P = np.eye(self.L)*10#*100 # a square matrix, dim(L x L). #How to initialise?
+        self.P[0,0] = 1e-10
         #Determine the weights for the UKF. This only needs to be done once.
         self._calculate_weights()
 
@@ -205,14 +190,13 @@ class UnscentedKalmanFilter:
         self.ll = 0
 
         i = 0 # a useful counter
-        for observation in self.observations:
+        for observation in self.observations: #[:20]:
             #print(f"Observation number {i} ", observation)
         
             # 1. Calculate sigma points, given the state variables 
             self._calculate_sigma_vectors(self.x,self.P) 
            
             
-           
             # 2. Time update
             
             # 2.1 Update the process noise covariance 
@@ -220,14 +204,12 @@ class UnscentedKalmanFilter:
             self.Q = self.Q_function(self.x,self.dt) 
 
             # 2.1 Evolve the sigma points in time
-            self.sigma_points_x = self.F_function(self.chi,parameters,self.dt)       
+            self.sigma_points_x = self.F_function(self.chi,self.dt)       
             
             # 2.2 Weighted state predictions and covariance
             self.x_predicted, self.P_xx,self.delta_x = self._predict(self.sigma_points_x) 
-            #print(np.diagonal(self.P_xx))
-            #print(self.Q)
             self.P_xx += self.Q
-            #print('---------------')
+            
 
             # 2.3 Update the sigma vectors using these new predictions of the state/covariance
             #---i.e. this updates self.chi
@@ -237,10 +219,14 @@ class UnscentedKalmanFilter:
             
             # 2.4 Evolve these new sigma vectors according to the measurement function
             #--- note that the dimensions of self.sigma_points_x and  self.sigma_points_y are different!
-            self.sigma_points_y = self.H_function(self.chi,parameters) # this is 4th step in time update. 
-            
+            self.sigma_points_y = self.H_function(self.chi) # this is 4th step in time update. 
+           
+
             # 2.5 Weighted state predictions and covariance
             self.y_predicted, self.P_yy,self.delta_y = self._predict(self.sigma_points_y) # 
+
+
+
             self.P_yy #+= self.R
             
             # 3. Measurement update
@@ -252,9 +238,6 @@ class UnscentedKalmanFilter:
 
             i += 1
 
-            # if i > 100:
-            #     self.IO_array[i:,:] = self.x
-            #     return 
         
 
         return self.ll

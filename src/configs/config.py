@@ -29,7 +29,7 @@ canonical = {
          "ra_GW":np.random.uniform(low=0.0, high=2*np.pi),
          "m1":4e12,
          "m2":3e12,
-         "Dl":0.0010 #Gpc
+         "Dl":0.00010 #Gpc
           },
 
 
