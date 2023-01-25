@@ -5,6 +5,8 @@ from scipy.linalg import sqrtm as matrix_sqrt
 from scipy.linalg import qr #as qr_decomposition
 import scipy.linalg as la
 import sys
+from scipy.stats import multivariate_normal
+
 class UnscentedKalmanFilter:
 
     """
@@ -19,7 +21,7 @@ class UnscentedKalmanFilter:
     
     """
 
-    def __init__(self,observations,model):
+    def __init__(self,observations,model,UKF_settings):
 
 
         
@@ -30,17 +32,26 @@ class UnscentedKalmanFilter:
         
         
         #Initialise some constants of the class
-        self.alpha = 7 #7e-3 # O'Leary uses 7e-4, Wan/Merwe recommend something generally small. e.g. 1e-3
-        self.beta  = 2    # Beta incorporates prior knowledge of the distribution of x. For Guassians, beta=2 is optimal
-        self.kappa = 0    # An extra scaling parameter. O'Leary uses 3-n_states, Wan/Merwe recommend =0
-        
+
+        self.alpha = UKF_settings["alpha"]
+        self.beta  = UKF_settings["beta"]
+        self.kappa = UKF_settings["kappa"]
+
+
         
         #Initialise the functions defined by the model
         self.initialise_model = model.initialize_global_quantities
         self.Q_function       = model.Q_function
         self.F_function       = model.F_function
-        self.H_function       = model.H_function
         self.R                = model.R_function()
+
+        self.H_measure = model.H_function
+        self.H_noise = model.null_measurement_function
+
+
+
+        
+
 
     def _predict(self,sigma_points):
 
@@ -86,7 +97,11 @@ class UnscentedKalmanFilter:
         self.P = self.P_xx - K @ self.P_yy @ K.T
 
         #Also return the likelihood
+        
         likelihood = -0.5*(np.linalg.slogdet(self.P_yy)[1] + innovation.T @ np.linalg.solve(self.P_yy, innovation)+ len(observation) * np.log(2*np.pi))
+
+
+        
         self.ll += likelihood
         
 
@@ -163,11 +178,18 @@ class UnscentedKalmanFilter:
         for i in range(self.L+1,2*self.L+1): 
             self.chi[i,:] = x -(self.gamma * P_sqrt[i-1 - self.L,:])
 
-    def ll_on_data(self,parameters):
+    def ll_on_data(self,parameters,measurement_model):
 
         """
         External function
         """
+
+        if measurement_model == "null":
+            self.H_function       = self.H_noise
+            print("Using the null measurement")
+        else:
+            self.H_function       = self.H_measure
+
 
         #Initialize the model
         self.initialise_model(parameters)
@@ -181,7 +203,7 @@ class UnscentedKalmanFilter:
 
         self.x[1:self.L] = self.observations[0,:]# guess that the intrinsic frequency is the same as the measured frequancy
 
-        self.P = np.eye(self.L)*10#*100 # a square matrix, dim(L x L). #How to initialise?
+        self.P = np.eye(self.L)*1e10#*100 # a square matrix, dim(L x L). #How to initialise?
         self.P[0,0] = 1e-10
         #Determine the weights for the UKF. This only needs to be done once.
         self._calculate_weights()
@@ -224,7 +246,7 @@ class UnscentedKalmanFilter:
 
             # 2.5 Weighted state predictions and covariance
             self.y_predicted, self.P_yy,self.delta_y = self._predict(self.sigma_points_y) # 
-
+            #print("Determinant:", self.alpha*np.sqrt(1+self.kappa), 2*np.pi/(parameters["omega"]*np.sqrt(np.linalg.det(self.P_yy))))
 
 
             self.P_yy #+= self.R

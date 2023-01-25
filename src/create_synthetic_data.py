@@ -156,7 +156,10 @@ class PulsarFrequencyObservations:
             if KF_predictions is not None:
                 ax2.plot(tplot,KF_predictions[:,psr_index+1]) #the 0th pulsar corresponds to the 1st element of the state
 
-            ax2.set_ylim((1-1e-6)*np.min(self.state_frequency[:,psr_index]),(1+1e-6)*np.max(self.state_frequency[:,psr_index]))
+            #ax2.set_ylim((1-1e-6)*np.min(self.state_frequency[:,psr_index]),(1+1e-6)*np.max(self.state_frequency[:,psr_index]))
+            #ax2.set_ylim((np.min(self.state_frequency[:,psr_index]),np.max(self.state_frequency[:,psr_index])))
+            ax2.set_ylim(363.7,364.2)
+
 
         ax2.set_ylabel(r'$f_p$ [Hz]')
 

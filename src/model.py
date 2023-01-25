@@ -99,9 +99,7 @@ class MelatosPTAModel:
         return output
 
 
-    def H_function(self,x,):
-
-
+    def H_function(self,x):
 
         """
         Measurement function.
@@ -161,6 +159,21 @@ class MelatosPTAModel:
 
 
 
+
+    def null_measurement_function(self,x):
+
+        """
+        Assume there is NO gravitational wave.
+        In the Melatos forumlation, this means that the thing you measure is just the same as the hidden state, modulo some noise.
+        This function just returns the measured states
+        """
+
+        return x[:,1:] 
+
+    
+
+
+
     def Q_function(self,x,dt):
 
         """
@@ -179,7 +192,7 @@ class MelatosPTAModel:
 
         Q =  np.zeros((self.dims_x,self.dims_x)) 
         for i in range(1,self.dims_x):
-            Q[i,i] = 0.1
+            Q[i,i] = 1e-5 #1e-3#0.1
 
       
         return Q 

@@ -6,7 +6,7 @@ from bayesian_inference import BilbySampler
 from configs.config import canonical as cfg
 import numpy as np
 import bilby 
-
+import os 
 
 
 
@@ -53,11 +53,12 @@ if __name__=="__main__":
     #First initialise the KF
     KF = UnscentedKalmanFilter(
                             observations=observations,
-                            model = model
+                            model = model,
+                            UKF_settings=cfg["UKF_parameters"]
                             )
 
     #Then run it for a particular set of parameters 
-    parameters = {"omega":   observations.omega_GW,
+    parameters = {"omega":   observations.omega_GW/1,
                   "gamma":   observations.spindown_gamma[0],
                   "n":       observations.spindown_n[0],
                   "dec_gw":  cfg["GW_parameters"]["dec_GW"],
@@ -69,16 +70,73 @@ if __name__=="__main__":
                  }
 
 
-    likelihod = KF.ll_on_data(parameters)
+
+    import time 
+    t1 = time.time()
+    import cProfile
+    KF.ll_on_data(parameters,"1.0")
+    #cProfile.run('KF.ll_on_data(parameters,"1.0")',sort="cumtime")
+    #likelihod = KF.ll_on_data(parameters,"1.0")
+    t2 = time.time()
+    print("Time taken:", t2-t1)
     
-
-    observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
-
-
+    #print(parameters["omega"]/observations.omega_GW, likelihod)
+    observations.plot_observations(psr_index=4,KF_predictions = KF.IO_array) #Can plot this
 
 
+    # xx = []
+    # yy = []
+    # for omega in np.logspace(-8,-6,20):
+
+    #         #First initialise the KF
+    #         KF = UnscentedKalmanFilter(
+    #                                 observations=observations,
+    #                                 model = model,
+    #                                 UKF_settings=cfg["UKF_parameters"]
+    #                                 )
 
 
+    #         parameters = {"omega":   omega,
+    #               "gamma":   observations.spindown_gamma[0],
+    #               "n":       observations.spindown_n[0],
+    #               "dec_gw":  cfg["GW_parameters"]["dec_GW"],
+    #               "ra_gw":   cfg["GW_parameters"]["ra_GW"],
+    #               "psi_gw":  cfg["GW_parameters"]["psi_GW"],
+    #               "Agw":     observations.Agw,
+    #               "iota_gw": cfg["GW_parameters"]["iota"],
+    #               "phi0":    cfg["GW_parameters"]["phase_normalisation"]
+    #              }
+    #         likelihod = KF.ll_on_data(parameters,1.0)
+    #         print(parameters["omega"]/observations.omega_GW, likelihod)
+    #         xx.extend([omega])
+    #         yy.extend([likelihod])
+
+    # import matplotlib.pyplot as plt
+    # plt.plot(xx,yy)
+    # plt.xscale('log')
+    # plt.show()
+
+    #observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
+
+
+
+    #A BILBY RUN
+
+
+    # priors = {  "omega":   bilby.core.prior.LogUniform(1e-8, 1e-5, 'omega'),
+    #             "gamma":   observations.spindown_gamma[0],
+    #             "n":       float(observations.spindown_n[0]),
+    #             "dec_gw":  cfg["GW_parameters"]["dec_GW"],
+    #             "ra_gw":   cfg["GW_parameters"]["ra_GW"],
+    #             "psi_gw":  cfg["GW_parameters"]["psi_GW"],
+    #             "Agw":     observations.Agw,
+    #             "iota_gw": cfg["GW_parameters"]["iota"],
+    #             "phi0":    cfg["GW_parameters"]["phase_normalisation"]
+    #             }
+
+
+    # result,outpath = BilbySampler(KF,priors)
+ 
 
 
 
@@ -92,16 +150,3 @@ if __name__=="__main__":
 
 
 
-    # priors = {    "omega":   bilby.core.prior.LogUniform(5e-7, 5e-6, 'omega'),
-    #             "gamma":   observations.spindown_gamma[0],
-    #             "n":       float(observations.spindown_n[0]),
-    #             "dec_gw":  cfg["GW_parameters"]["dec_GW"],
-    #             "ra_gw":   cfg["GW_parameters"]["ra_GW"],
-    #             "psi_gw":  cfg["GW_parameters"]["psi_GW"],
-    #             "Agw":     observations.Agw,
-    #             "iota_gw": cfg["GW_parameters"]["iota"],
-    #             "phi0":    cfg["GW_parameters"]["phase_normalisation"]
-    #             }
-
-
-    # result = BilbySampler(KF,priors)
