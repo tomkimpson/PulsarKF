@@ -1,7 +1,7 @@
 
 """Model config in json format"""
 import numpy as np
-Npulsars = 20
+Npulsars = 41
 np.random.seed(4)
 canonical = {
 
@@ -18,6 +18,7 @@ canonical = {
          "pulsar_distances": np.ones(Npulsars), #every pulsar is 1kpc away
          "spindown_gamma": np.full((Npulsars,),1e-20),
          "spindown_n": np.full((Npulsars,),3),
+         "generate_uniform_pulsars": False
           },
 
     "GW_parameters": {
@@ -29,7 +30,7 @@ canonical = {
          "ra_GW":np.random.uniform(low=0.0, high=2*np.pi),
          "m1":4e12,
          "m2":3e12,
-         "Dl":1e-6 #Gpc
+         "Dl":1 #Gpc
           },
 
 

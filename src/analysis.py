@@ -2,7 +2,7 @@
 
 
 
-id = "51f7e999"
+id = "06cb0e38"
 results_file = f"../results/{id}/{id}_result.json"
 
 
@@ -25,6 +25,8 @@ def give_me_some_numbers(fname):
 
     
     sns.histplot(data=posterior, x="omega",log_scale=True,kde=True)
+
+    print(posterior["omega"].median())
     plt.show()
 
 

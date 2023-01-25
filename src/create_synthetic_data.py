@@ -74,7 +74,11 @@ class PulsarFrequencyObservations:
         #With the evolution of the state variables, we can now get the observations
         #First define some GW related quantities, with the ultimate aim of getting the 3x3 matrix h_ij for every timestep
         
-        self.q              = pulsar_directions(np.pi/2.0 - self.dec_psr,self.ra_psr)           # Get the direction vector of the pulsar
+        # Get the direction vector of the pulsar
+        if pulsar_parameters["generate_uniform_pulsars"]:
+            self.q              = uniform_pulsar_directions(self.Npulsars)   
+        else:  
+            self.q              = pulsar_directions(np.pi/2.0 - self.dec_psr,self.ra_psr)   
         m,n                 = principal_axes(np.pi/2.0 - self.dec_gw,self.ra_gw,self.psi_gw)    # Get basis vectors of the GW 
         GW_direction_vector = np.cross(m,n)                                                     # The GW propagation direction
         self.hp,self.hx     = h_amplitudes(self.Agw,self.iota_gw)                                    # The GW amplitudes 

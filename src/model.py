@@ -131,22 +131,22 @@ class MelatosPTAModel:
         """
 
         #Declare parameters for this function
-        omega = self.omega 
-        gamma = self.gamma
-        n     = self.n 
+        #omega = self.omega 
+        #gamma = self.gamma
+        #n     = self.n 
         nrows = x.shape[0]
 
         
 
         #Initialize output array
-        output = np.zeros_like(x) #the output should have the same shape as the input, `x`
+        #output = np.zeros_like(x) #the output should have the same shape as the input, `x`
         
 
         df = np.zeros_like(x) #the output should have the same shape as the input, `x`
-        df[:,0] = np.full(nrows,omega)
-        df[:,1:] = -gamma * x[:,1:]**n
+        df[:,0] = np.full(nrows,self.omega)
+        df[:,1:] = -self.gamma * x[:,1:]**self.n
 
-        return x + dt*df
+        return x + dt*df #euler step
 
       
 
@@ -282,7 +282,7 @@ class MelatosPTAModel:
 
         Q =  np.zeros((self.dims_x,self.dims_x)) 
         for i in range(1,self.dims_x):
-            Q[i,i] = 1e-5 #1e-3#0.1
+            Q[i,i] = 1e-14 #1e-3#0.1
 
       
         return Q 

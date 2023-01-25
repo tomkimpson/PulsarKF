@@ -71,17 +71,33 @@ if __name__=="__main__":
 
 
 
-    import time 
-    t1 = time.time()
-    import cProfile
-    #likelihood = KF.ll_on_data(parameters,"1.0")
-    #cProfile.run('KF.ll_on_data(parameters,"1.0")',sort="cumtime")
-    likelihod = KF.ll_on_data(parameters,"1.0")
-    t2 = time.time()
-    print("Time taken:", t2-t1,likelihod)
+
     
-    #print(parameters["omega"]/observations.omega_GW, likelihod)
-    observations.plot_observations(psr_index=4,KF_predictions = KF.IO_array) #Can plot this
+
+    model_likelihood = KF.ll_on_data(parameters,"1.0")
+    null_likelihood = KF.ll_on_data(parameters,"null")
+
+    bayes_factor = model_likelihood - null_likelihood
+    print("Bayes factor is:",bayes_factor)
+
+
+
+
+
+
+
+
+# #     import time 
+# #     t1 = time.time()
+# #     import cProfile
+    likelihood = KF.ll_on_data(parameters,"1.0")
+# #     #cProfile.run('KF.ll_on_data(parameters,"1.0")',sort="cumtime")
+# #     #likelihod = KF.ll_on_data(parameters,"1.0")
+# #     t2 = time.time()
+    #print("likelihood:",likelihood)
+    
+# #     #print(parameters["omega"]/observations.omega_GW, likelihod)
+#     observations.plot_observations(psr_index=4,KF_predictions = KF.IO_array) #Can plot this
 
 
     # xx = []
@@ -123,7 +139,7 @@ if __name__=="__main__":
     #A BILBY RUN
 
 
-    # priors = {  "omega":   bilby.core.prior.LogUniform(1e-8, 1e-5, 'omega'),
+    # priors = {  "omega":   bilby.core.prior.LogUniform(1e-9, 1e-5, 'omega'),
     #             "gamma":   observations.spindown_gamma[0],
     #             "n":       float(observations.spindown_n[0]),
     #             "dec_gw":  cfg["GW_parameters"]["dec_GW"],

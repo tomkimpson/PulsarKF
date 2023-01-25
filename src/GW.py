@@ -67,6 +67,48 @@ def pulsar_directions(polar_angle,azimuth_angle):
 
 
 
+def uniform_pulsar_directions(N):
+
+    """
+    
+    """
+
+    q = np.zeros((int(N),3))
+
+
+
+    #points = []
+    phi = np.pi * (3. - np.sqrt(5.))  # golden angle in radians
+
+    for i in range(int(N)):
+        y = 1 - (i / float(N - 1)) * 2  # y goes from 1 to -1
+        radius = np.sqrt(1 - y * y)  # radius at y
+
+        theta = phi * i  # golden angle increment
+
+        x = np.cos(theta) * radius
+        z = np.sin(theta) * radius
+
+        q[i,0] = x
+        q[i,1] = y
+        q[i,2] = z
+        
+
+    return q
+
+
+
+
+
+
+
+    for i in range(len(polar_angle)):
+        q[i,0] = np.sin(polar_angle[i])*np.cos(azimuth_angle[i])
+        q[i,1] = np.sin(polar_angle[i])*np.sin(azimuth_angle[i])
+        q[i,2] = np.cos(polar_angle[i])
+    
+    return q 
+
 
 
 

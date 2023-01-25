@@ -49,6 +49,8 @@ class UnscentedKalmanFilter:
         self.H_noise = model.null_measurement_function
 
 
+        #Determine the weights for the UKF. This only needs to be done once.
+        self._calculate_weights()
 
         
 
@@ -166,17 +168,30 @@ class UnscentedKalmanFilter:
         
         P_sqrt = la.cholesky(P_check, check_finite=True)  #Cholesky is much faster than scipy.linalg.sqrtm
        
-
-        #Initialise the sigma vector
-        self.chi = np.zeros((2*self.L + 1,self.L))
-
-        #The 0th element is just the mean
-        self.chi[0,:] = x
+        M = self.gamma*P_sqrt
        
-        for i in range(1,self.L+1): 
-            self.chi[i,:]          = x +(self.gamma * P_sqrt[i-1,:])
-        for i in range(self.L+1,2*self.L+1): 
-            self.chi[i,:] = x -(self.gamma * P_sqrt[i-1 - self.L,:])
+        self.chi = np.zeros((2*self.L + 1,self.L))
+        self.chi2 = np.zeros((2*self.L + 1,self.L))
+
+       
+        self.chi[0,:] = x
+        part1 = x + M
+        part2 = x - M
+
+        self.chi[1:self.L+1,:] = x + M
+        self.chi[self.L+1:2*self.L+1+1,:] = x - M
+
+       
+        # for i in range(1,self.L+1): 
+        #     print(i)
+        #     self.chi[i,:]          = x +(self.gamma * P_sqrt[i-1,:])
+
+        # print("------------")
+        # for i in range(self.L+1,2*self.L+1): 
+        #     print(i)
+        #     self.chi[i,:] = x -(self.gamma * P_sqrt[i-1 - self.L,:])
+
+  
 
     def ll_on_data(self,parameters,measurement_model):
 
@@ -206,8 +221,6 @@ class UnscentedKalmanFilter:
         self.P = np.eye(self.L)*1e10#*100 # a square matrix, dim(L x L). #How to initialise?
         self.P[0,0] = 1e-10
 
-        #Determine the weights for the UKF. This only needs to be done once.
-        self._calculate_weights()
 
         #Initialise the likelihood
         self.ll = 0
