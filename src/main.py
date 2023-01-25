@@ -58,7 +58,7 @@ if __name__=="__main__":
                             )
 
     #Then run it for a particular set of parameters 
-    parameters = {"omega":   observations.omega_GW/1,
+    parameters = {"omega":   observations.omega_GW,
                   "gamma":   observations.spindown_gamma[0],
                   "n":       observations.spindown_n[0],
                   "dec_gw":  cfg["GW_parameters"]["dec_GW"],
@@ -74,11 +74,11 @@ if __name__=="__main__":
     import time 
     t1 = time.time()
     import cProfile
-    KF.ll_on_data(parameters,"1.0")
+    #likelihood = KF.ll_on_data(parameters,"1.0")
     #cProfile.run('KF.ll_on_data(parameters,"1.0")',sort="cumtime")
-    #likelihod = KF.ll_on_data(parameters,"1.0")
+    likelihod = KF.ll_on_data(parameters,"1.0")
     t2 = time.time()
-    print("Time taken:", t2-t1)
+    print("Time taken:", t2-t1,likelihod)
     
     #print(parameters["omega"]/observations.omega_GW, likelihod)
     observations.plot_observations(psr_index=4,KF_predictions = KF.IO_array) #Can plot this

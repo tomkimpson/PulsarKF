@@ -29,6 +29,19 @@ class MelatosPTAModel:
         self.q = pulsar_directions(np.pi/2.0 - dec_psr,ra_psr)           # Get the direction vector of the pulsar
 
 
+        self.q_ij = np.zeros((len(self.q),9))
+        for i in range(len(self.q)):
+            row = self.q[i,:].reshape(3,1)
+            
+            col = row.reshape(1,3)
+            self.q_ij[i,:] = np.dot(row,col).flatten()
+            
+
+
+        
+
+
+
 
     def initialize_global_quantities(self,parameters):
 
@@ -54,12 +67,18 @@ class MelatosPTAModel:
         self.n     = parameters["n"]
 
 
+        #Reshape
+        self.eplus_flat = self.eplus.reshape(9,1)
+        self.ecross_flat = self.ecross.reshape(9,1)
 
-        
+
+        #Useful quantities
+        self.dot_product = 1 + np.dot(self.GW_direction_vector,self.q.T)
+        self.H_coefficient = np.real((1 - np.exp(1j*self.omega*self.pulsar_distances*self.dot_product/c)) / (2*self.dot_product))
 
 
 
-    def F_function(self,x,dt):
+    def F_function_new(self,x,dt):
 
         """
         Transition function.
@@ -99,7 +118,78 @@ class MelatosPTAModel:
         return output
 
 
+
+    def F_function(self,x,dt):
+
+        """
+        Transition function.
+
+        User defined function that should take the state `x` and advance it by
+        `dt`.
+
+        The state here is actually the sigma points
+        """
+
+        #Declare parameters for this function
+        omega = self.omega 
+        gamma = self.gamma
+        n     = self.n 
+        nrows = x.shape[0]
+
+        
+
+        #Initialize output array
+        output = np.zeros_like(x) #the output should have the same shape as the input, `x`
+        
+
+        df = np.zeros_like(x) #the output should have the same shape as the input, `x`
+        df[:,0] = np.full(nrows,omega)
+        df[:,1:] = -gamma * x[:,1:]**n
+
+        return x + dt*df
+
+      
+
+
     def H_function(self,x):
+
+        """
+        Measurement function.
+
+        User defined function that should take the state `x` and return the measurement
+
+        The state here is actually the sigma points
+        """
+
+          
+        #Get the hplus and hcross strains for each 2L + 1 phase 
+        hplus,hcross        = self.hp*np.cos(x[:,0]),self.hx*np.sin(x[:,0]) # The time varying plus and cross GW strains
+
+
+        hplus = hplus.reshape(1,len(hplus))
+        hcross = hcross.reshape(1,len(hcross)) #can we avoid these reshapes?
+       
+
+        
+
+        h_ij      = np.dot(self.eplus_flat,hplus) + np.dot(self.ecross_flat, hcross) # (9,2L+1)
+        hscalar   = np.dot(h_ij.T, self.q_ij.T)
+        GW_factor = 1.0 - hscalar*self.H_coefficient
+        fmeasured = x[:,1:]  * GW_factor
+        
+    
+
+
+        return fmeasured
+
+
+
+
+
+
+
+
+    def H_functionold(self,x):
 
         """
         Measurement function.

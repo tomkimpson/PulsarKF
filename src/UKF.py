@@ -205,6 +205,7 @@ class UnscentedKalmanFilter:
 
         self.P = np.eye(self.L)*1e10#*100 # a square matrix, dim(L x L). #How to initialise?
         self.P[0,0] = 1e-10
+
         #Determine the weights for the UKF. This only needs to be done once.
         self._calculate_weights()
 
