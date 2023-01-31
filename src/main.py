@@ -4,6 +4,7 @@ from model import MelatosPTAModel
 from bayesian_inference import BilbySampler
 
 from configs.config import canonical as cfg
+from configs.config import NF
 import numpy as np
 import bilby 
 import os 
@@ -25,19 +26,20 @@ if __name__=="__main__":
     #First, let's create some synthetic data.
     dt   = cfg["timing_parameters"]["dt_days"] 
     Tend = cfg["timing_parameters"]["T_years"]     
-    t    = np.arange(0.0,Tend*365*24*3600,dt*24*3600) #time runs from 0 to Tend, with intervals dt 
+    t    = np.arange(0.0,Tend*365*24*3600,dt*24*3600,dtype=NF) #time runs from 0 to Tend, with intervals dt 
 
     observations = PulsarFrequencyObservations(t)              # initialise the class, all observations have same times
     observations.create_observations(cfg["pulsar_parameters"],
-                                    cfg["GW_parameters"],
-                                    cfg["noise_parameters"])  # generate the observations. You can also plot this as e.g. observations.plot_observations(psr_index=2,KF_predictions = None) 
+                                     cfg["GW_parameters"],
+                                     cfg["noise_parameters"])  # generate the observations. You can also plot this as e.g. observations.plot_observations(psr_index=2,KF_predictions = None) 
 
     
 
 
+    observations.plot_observations(psr_index=2,KF_predictions = None) #Can plot this
 
 
-
+    sys.exit()
 
 
 

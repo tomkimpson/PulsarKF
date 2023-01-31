@@ -19,7 +19,7 @@ if __name__=="__main__":
     multiprocessing.set_start_method("fork") #These lines are needed on macOS since the default start method is "spawn" which doesn't work well with Bilby
 
 
-    Niterations = 100
+    Niterations = 10
     out = np.zeros((Niterations,2))
     i = 0
     for h in np.logspace(-14,-8,Niterations):

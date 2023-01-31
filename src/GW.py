@@ -1,5 +1,6 @@
 from numpy import sin,cos
 from universal_constants import *
+from configs.config import NF
 import numpy as np 
 
 def principal_axes(theta,phi,psi):
@@ -25,8 +26,8 @@ def principal_axes(theta,phi,psi):
 def polarisation_basis(m,n):
 
 
-    e_plus  = np.zeros((3,3))
-    e_cross = np.zeros((3,3))
+    e_plus  = np.zeros((3,3),dtype=NF)
+    e_cross = np.zeros((3,3),dtype=NF)
     for i in range(3):
         for j in range(3):
             e_plus[i,j]  = m[i]*m[j] -n[i]*n[j]
@@ -42,7 +43,7 @@ def h_amplitudes(Agw,iota_gw):
         return hplus,hcross
 
 def h_ij(e_plus,e_cross,hplus,hcross):
-    h = np.zeros((3,3))
+    h = np.zeros((3,3),dtype=NF)
     for i in range(3):
         for j in range(3):
             h[i,j]  = e_plus[i,j]*hplus + e_cross[i,j]*hcross
@@ -58,8 +59,7 @@ def pulsar_directions(polar_angle,azimuth_angle):
 
     q = np.zeros((len(polar_angle),3))
 
-    print(polar_angle)
-    print(azimuth_angle)
+
 
     for i in range(len(polar_angle)):
         q[i,0] = np.sin(polar_angle[i])*np.cos(azimuth_angle[i])
@@ -76,7 +76,7 @@ def uniform_pulsar_directions(N):
     
     """
 
-    q = np.zeros((int(N),3))
+    q = np.zeros((int(N),3),dtype=NF)
 
 
 
@@ -93,11 +93,11 @@ def uniform_pulsar_directions(N):
         z = np.sin(theta) * radius
 
 
-        #array([ , -0.9923414 , -0.03089701])
 
-        q[i,0] = 0.11959898 #x
-        q[i,1] = -0.9923414 #y
-        q[i,2] = -0.03089701 #z
+
+        q[i,0] = x
+        q[i,1] = y
+        q[i,2] = z
         
 
     return q
@@ -107,10 +107,10 @@ def orthogonal_pulsar_directions(N,k):
 
 
 
-    q = np.zeros((int(N),3))
+    q = np.zeros((int(N),3),dtype=NF)
 
     for i in range(int(N)):
-        x = np.random.randn(3)  # take a random vector
+        x = np.random.randn(3,dtype=NF)  # take a random vector
         x -= x.dot(k) * k       # make it orthogonal to k
         x /= np.linalg.norm(x)  # normalize it
 

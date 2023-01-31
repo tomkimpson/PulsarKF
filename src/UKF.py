@@ -171,25 +171,15 @@ class UnscentedKalmanFilter:
         M = self.gamma*P_sqrt
        
         self.chi = np.zeros((2*self.L + 1,self.L))
-        self.chi2 = np.zeros((2*self.L + 1,self.L))
 
        
         self.chi[0,:] = x
-        part1 = x + M
-        part2 = x - M
 
         self.chi[1:self.L+1,:] = x + M
         self.chi[self.L+1:2*self.L+1+1,:] = x - M
 
        
-        # for i in range(1,self.L+1): 
-        #     print(i)
-        #     self.chi[i,:]          = x +(self.gamma * P_sqrt[i-1,:])
-
-        # print("------------")
-        # for i in range(self.L+1,2*self.L+1): 
-        #     print(i)
-        #     self.chi[i,:] = x -(self.gamma * P_sqrt[i-1 - self.L,:])
+ 
 
   
 
