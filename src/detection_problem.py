@@ -57,21 +57,26 @@ def run(pulsar_parameters,GW_parameters,noise_parameters,t):
 
 
     # Then run it for the optimal parameters set of parameters 
-    parameters = {"omega":   observations.omega_GW,
-                  "gamma":   observations.spindown_gamma[0],
-                  "n":       observations.spindown_n[0],
+    parameters = {
                   "dec_gw":  cfg["GW_parameters"]["dec_GW"],
                   "ra_gw":   cfg["GW_parameters"]["ra_GW"],
                   "psi_gw":  cfg["GW_parameters"]["psi_GW"],
-                  "Agw":     observations.Agw,
                   "iota_gw": cfg["GW_parameters"]["iota"],
-                  "phi0":    cfg["GW_parameters"]["phase_normalisation"]
+                  "phi0":    cfg["GW_parameters"]["phase_normalisation"],
+                  "omega":   observations.omega_GW,
+                  "Agw":     observations.Agw, 
+                 "gamma":   observations.spindown_gamma[0],
+                  "n":       observations.spindown_n[0],
                  }
 
 
 
     model_likelihood = KF.ll_on_data(parameters,"1.0")
     null_likelihood = KF.ll_on_data(parameters,"null")
+
+
+    print("model likelihood", model_likelihood)
+    print("null likelihood", null_likelihood)
 
     bayes_factor = model_likelihood - null_likelihood
     print("Bayes factor is:",bayes_factor)
@@ -87,16 +92,16 @@ if __name__=="__main__":
 
 
     
-
+    np.random.seed(6)
 
 
     dt   = 7 #days
     Tend = 10 #years    
     t    = np.arange(0.0,Tend*365*24*3600,dt*24*3600) #time runs from 0 to Tend, with intervals dt 
 
-    Npulsars = 41
+    Npulsars = 39
     pulsar_parameters = {
-         "f_psr":           np.random.uniform(low=50, high=500, size=(Npulsars,)),    
+         "f_psr":            np.random.uniform(low=50, high=500, size=(Npulsars,)),    
          "dec_psr":          np.random.uniform(low=-np.pi/2, high=np.pi/2, size=(Npulsars,)),  # sampling interval in days
          "ra_psr":           np.random.uniform(low=0.0, high=2*np.pi, size=(Npulsars,)),      # number of pulsars in PTA,
          "pulsar_distances": np.ones(Npulsars),                                               # every pulsar is 1kpc away
@@ -113,9 +118,11 @@ if __name__=="__main__":
          "iota":                np.random.uniform(low=-np.pi/2, high=np.pi/2),
          "dec_GW":              np.random.uniform(low=-np.pi/2, high=np.pi/2),
          "ra_GW":               np.random.uniform(low=0.0, high=2*np.pi),
-         "m1":                  4e12,
-         "m2":                  3e12,
-         "Dl":                  1 #Gpc
+         "h0":                  2.5e-8
+         
+        #  "m1":                  4e12,
+        #  "m2":                  3e12,
+        #  "Dl":                  1 #Gpc
           },
 
 
@@ -137,3 +144,40 @@ if __name__=="__main__":
 
 
 
+
+
+
+
+
+
+
+
+    #     pulsar_parameters = {
+    #      "f_psr":            np.linspace(50, 500, Npulsars),    
+    #      "dec_psr":          np.linspace(-np.pi/2, np.pi/2, Npulsars),  # sampling interval in days
+    #      "ra_psr":           np.linspace(0.0, 2*np.pi, Npulsars),      # number of pulsars in PTA,
+    #      "pulsar_distances": np.ones(Npulsars),                                               # every pulsar is 1kpc away
+    #      "spindown_gamma":   np.full((Npulsars,),1e-20),
+    #      "spindown_n":       np.full((Npulsars,),3),
+    #      "generate_uniform_pulsars": True  #If true dec_psr and ra_psr are ignored. Generates N pulsars evenly spaced.
+    #       },
+
+
+    # GW_parameters= {
+    #      "omega_GW" :           1e-7,
+    #      "phase_normalisation": 0.20,  
+    #      "psi_GW":              1.0,#np.random.uniform(low=0.0, high=np.pi*2),
+    #      "iota":                1.0,#np.random.uniform(low=-np.pi/2, high=np.pi/2),
+    #      "dec_GW":              1.0,#np.random.uniform(low=-np.pi/2, high=np.pi/2),
+    #      "ra_GW":               1.0,#np.random.uniform(low=0.0, high=2*np.pi),
+    #      "m1":                  4e12,
+    #      "m2":                  3e12,
+    #      "Dl":                  1 #Gpc
+    #       },
+
+
+    # noise_parameters = {
+    #                      "process_noise": np.ones(Npulsars)*0.0,# 1e-10,      
+    #                      "measurement_noise": 0.0  # standard deviation gaussian measurement noise.
+    #                    },
+   

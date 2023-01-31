@@ -58,6 +58,9 @@ def pulsar_directions(polar_angle,azimuth_angle):
 
     q = np.zeros((len(polar_angle),3))
 
+    print(polar_angle)
+    print(azimuth_angle)
+
     for i in range(len(polar_angle)):
         q[i,0] = np.sin(polar_angle[i])*np.cos(azimuth_angle[i])
         q[i,1] = np.sin(polar_angle[i])*np.sin(azimuth_angle[i])
@@ -89,25 +92,32 @@ def uniform_pulsar_directions(N):
         x = np.cos(theta) * radius
         z = np.sin(theta) * radius
 
-        q[i,0] = x
-        q[i,1] = y
-        q[i,2] = z
+
+        #array([ , -0.9923414 , -0.03089701])
+
+        q[i,0] = 0.11959898 #x
+        q[i,1] = -0.9923414 #y
+        q[i,2] = -0.03089701 #z
         
 
     return q
 
 
+def orthogonal_pulsar_directions(N,k):
 
 
 
+    q = np.zeros((int(N),3))
+
+    for i in range(int(N)):
+        x = np.random.randn(3)  # take a random vector
+        x -= x.dot(k) * k       # make it orthogonal to k
+        x /= np.linalg.norm(x)  # normalize it
+
+        q[i,:] = x 
 
 
-    for i in range(len(polar_angle)):
-        q[i,0] = np.sin(polar_angle[i])*np.cos(azimuth_angle[i])
-        q[i,1] = np.sin(polar_angle[i])*np.sin(azimuth_angle[i])
-        q[i,2] = np.cos(polar_angle[i])
-    
-    return q 
+    return q
 
 
 

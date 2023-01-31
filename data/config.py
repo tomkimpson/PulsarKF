@@ -1,7 +1,7 @@
 
 """Model config in json format"""
 import numpy as np
-Npulsars = 2
+Npulsars = 100
 #np.random.seed(6)
 canonical = {
 
@@ -38,7 +38,7 @@ canonical = {
 
     "noise_parameters":{#"process_noise": np.random.uniform(low=0.001, high=0.002, size=(Npulsars,)),  
                          "process_noise": np.ones(Npulsars)*0.0,#1e-12,      
-                         "measurement_noise": 0.0 #1e-8 # standard deviation gaussian measurement noise.
+                         "measurement_noise": 1e-8 # standard deviation gaussian measurement noise.
             },
 
 

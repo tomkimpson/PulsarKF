@@ -19,86 +19,106 @@ if __name__=="__main__":
     multiprocessing.set_start_method("fork") #These lines are needed on macOS since the default start method is "spawn" which doesn't work well with Bilby
 
 
-   
+    Niterations = 100
+    out = np.zeros((Niterations,2))
+    i = 0
+    for h in np.logspace(-14,-8,Niterations):
+
+        cfg["GW_parameters"]["h0"] = h #override
 
 
-    #First, let's create some synthetic data.
-    dt   = cfg["timing_parameters"]["dt_days"] 
-    Tend = cfg["timing_parameters"]["T_years"]     
-    t    = np.arange(0.0,Tend*365*24*3600,dt*24*3600) #time runs from 0 to Tend, with intervals dt 
+        #First, let's create some synthetic data.
+        dt   = cfg["timing_parameters"]["dt_days"] 
+        Tend = cfg["timing_parameters"]["T_years"]     
+        t    = np.arange(0.0,Tend*365*24*3600,dt*24*3600) #time runs from 0 to Tend, with intervals dt 
 
-    observations = PulsarFrequencyObservations(t)              # initialise the class, all observations have same times
-    observations.create_observations(cfg["pulsar_parameters"],
-                                    cfg["GW_parameters"],
-                                    cfg["noise_parameters"])  # generate the observations. You can also plot this as e.g. observations.plot_observations(psr_index=2,KF_predictions = None) 
-
+        observations = PulsarFrequencyObservations(t)              # initialise the class, all observations have same times
+        observations.create_observations(cfg["pulsar_parameters"],
+                                        cfg["GW_parameters"],
+                                        cfg["noise_parameters"])  # generate the observations. You can also plot this as e.g. observations.plot_observations(psr_index=2,KF_predictions = None) 
     
+        
 
 
 
-
-
-
-
-
-    #Now initialise the state-space model to be used with the UKF
-    dictionary_of_known_quantities = {"pulsar_directions": observations.q,
-                                    "pulsar_distances":cfg["pulsar_parameters"]["pulsar_distances"],
-                                    "measurement_noise":cfg["noise_parameters"]["measurement_noise"],
-                                    }
-    model = MelatosPTAModel(observations.Npulsars + 1,
-                            observations.Npulsars,
-                            dictionary_of_known_quantities)
-
-
-
-
-
-
-
-
-    #Now let's run the UKF on this data
-
-    #First initialise the KF
-    KF = UnscentedKalmanFilter(
-                            observations=observations,
-                            model = model,
-                            UKF_settings=cfg["UKF_parameters"]
-                            )
-
-    #Then run it for a particular set of parameters 
-    parameters = {"omega":   observations.omega_GW,
-                "gamma":   observations.spindown_gamma[0],
-                "n":       observations.spindown_n[0],
-                "dec_gw":  cfg["GW_parameters"]["dec_GW"],
-                "ra_gw":   cfg["GW_parameters"]["ra_GW"],
-                "psi_gw":  cfg["GW_parameters"]["psi_GW"],
-                "Agw":     observations.Agw,
-                "iota_gw": cfg["GW_parameters"]["iota"],
-                "phi0":    cfg["GW_parameters"]["phase_normalisation"]
-                }
 
 
 
 
     
-
-    model_likelihood = KF.ll_on_data(parameters,"1.0")
-    #observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
-
-    null_likelihood = KF.ll_on_data(parameters,"null")
-    #observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
-
-
-    print("model likelihood", model_likelihood)
-    print("null likelihood", null_likelihood)
+        #Now initialise the state-space model to be used with the UKF
+        dictionary_of_known_quantities = {"pulsar_directions": observations.q,
+                                        "pulsar_distances":cfg["pulsar_parameters"]["pulsar_distances"],
+                                        "measurement_noise":cfg["noise_parameters"]["measurement_noise"],
+                                        }
+        model = MelatosPTAModel(observations.Npulsars + 1,
+                                observations.Npulsars,
+                                dictionary_of_known_quantities)
 
 
-    bayes_factor = model_likelihood - null_likelihood
 
 
-    print("Likelihood ratio:", bayes_factor)
 
+
+
+
+        #Now let's run the UKF on this data
+
+        #First initialise the KF
+        KF = UnscentedKalmanFilter(
+                                observations=observations,
+                                model = model,
+                                UKF_settings=cfg["UKF_parameters"]
+                                )
+
+        #Then run it for a particular set of parameters 
+        parameters = {"omega":   observations.omega_GW,
+                    "gamma":   observations.spindown_gamma[0],
+                    "n":       observations.spindown_n[0],
+                    "dec_gw":  cfg["GW_parameters"]["dec_GW"],
+                    "ra_gw":   cfg["GW_parameters"]["ra_GW"],
+                    "psi_gw":  cfg["GW_parameters"]["psi_GW"],
+                    "Agw":     observations.Agw,
+                    "iota_gw": cfg["GW_parameters"]["iota"],
+                    "phi0":    cfg["GW_parameters"]["phase_normalisation"]
+                    }
+
+
+
+
+        
+
+        model_likelihood = KF.ll_on_data(parameters,"1.0")
+        #observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
+
+        null_likelihood = KF.ll_on_data(parameters,"null")
+        #observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
+
+
+        print("model likelihood", model_likelihood)
+        print("null likelihood", null_likelihood)
+
+
+        bayes_factor = model_likelihood - null_likelihood
+
+
+        if bayes_factor < 0:
+            b = 0
+        else:
+            b = bayes_factor
+
+        out[i][0] = b 
+        out[i][1] = h 
+
+        i +=1
+
+    
+        print("Bayes factor is:",bayes_factor)
+
+
+
+    print("saving")
+    np.save(f"outfile_{observations.Npulsars}",out)
 
     #observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
 

@@ -22,11 +22,18 @@ class MelatosPTAModel:
         
 
 
-        dec_psr = dictionary_of_known_quantities["dec_psr"]
-        ra_psr  = dictionary_of_known_quantities["ra_psr"]
+        #ec_psr = dictionary_of_known_quantities["dec_psr"]
+        #ra_psr  = dictionary_of_known_quantities["ra_psr"]
         self.pulsar_distances = dictionary_of_known_quantities["pulsar_distances"] * 1e3 * pc #from kpc to m
+        self.measurement_noise = dictionary_of_known_quantities["measurement_noise"]**2
         
-        self.q = pulsar_directions(np.pi/2.0 - dec_psr,ra_psr)           # Get the direction vector of the pulsar
+        
+        
+        self.q = dictionary_of_known_quantities["pulsar_directions"]
+        
+        
+        
+        #pulsar_directions(np.pi/2.0 - dec_psr,ra_psr)           # Get the direction vector of the pulsar
 
 
         self.q_ij = np.zeros((len(self.q),9))
@@ -74,6 +81,9 @@ class MelatosPTAModel:
 
         #Useful quantities
         self.dot_product = 1 + np.dot(self.GW_direction_vector,self.q.T)
+
+        #print("DOT PROD",np.dot(self.GW_direction_vector,self.q.T))
+
         self.H_coefficient = np.real((1 - np.exp(1j*self.omega*self.pulsar_distances*self.dot_product/c)) / (2*self.dot_product))
 
 
@@ -282,7 +292,7 @@ class MelatosPTAModel:
 
         Q =  np.zeros((self.dims_x,self.dims_x)) 
         for i in range(1,self.dims_x):
-            Q[i,i] = 1e-14 #1e-3#0.1
+            Q[i,i] = 1e-16 #1e-3#0.1 #1e1-14
 
       
         return Q 
@@ -296,7 +306,7 @@ class MelatosPTAModel:
         """
 
 
-        return 0.0
+        return self.measurement_noise
 
 
 

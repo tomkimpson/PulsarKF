@@ -250,7 +250,7 @@ class UnscentedKalmanFilter:
             # 2.3 Update the sigma vectors using these new predictions of the state/covariance
             #---i.e. this updates self.chi
             #Todo: Do we need this step? Seems to be slightly conflicting advice in the literature.
-            #Joe's nice working code does incldue this step See also e.g. 
+            #Joe's nice working code does include this step See also e.g. 
             #self._calculate_sigma_vectors(self.x_predicted,self.P_xx)
             
             # 2.4 Evolve these new sigma vectors according to the measurement function
@@ -260,10 +260,9 @@ class UnscentedKalmanFilter:
 
             # 2.5 Weighted state predictions and covariance
             self.y_predicted, self.P_yy,self.delta_y = self._predict(self.sigma_points_y) # 
-            #print("Determinant:", self.alpha*np.sqrt(1+self.kappa), 2*np.pi/(parameters["omega"]*np.sqrt(np.linalg.det(self.P_yy))))
 
 
-            self.P_yy #+= self.R
+            self.P_yy += self.R
             
             # 3. Measurement update
             self._update(observation) 
