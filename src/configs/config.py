@@ -33,7 +33,7 @@ canonical = {
 
     "noise_parameters":{
                          "process_noise": NF(2e-16),    #standard deviation of process noise      
-                         "measurement_noise": NF(0.0) #standard deviation gaussian measurement noise.
+                         "measurement_noise": NF(1e-10) #standard deviation gaussian measurement noise.
             },
 
 
