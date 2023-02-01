@@ -36,17 +36,20 @@ if __name__=="__main__":
     
 
 
-    observations.plot_observations(psr_index=2,KF_predictions = None) #Can plot this
 
+    # sigma = np.std(observations.observations[:,0])  
+    # W = 1/cfg["GW_parameters"]["omega_GW"]
+    # RHS = W/sigma
 
-    sys.exit()
-
-
+    
+    # kappa = RHS**2 - 1
+    # print(kappa)
+    # sys.exit()
 
     #Now initialise the state-space model to be used with the UKF
-    dictionary_of_known_quantities = {"pulsar_directions": observations.q,
-                                    "pulsar_distances":cfg["pulsar_parameters"]["pulsar_distances"],
-                                    "measurement_noise":cfg["noise_parameters"]["measurement_noise"],
+    dictionary_of_known_quantities = {"pulsar_directions": observations.q,                              # we know the pulsar directions
+                                      "pulsar_distances":  observations.pulsar_distances,               # for now lets say we also know their distances. In reality we have some constrained prior
+                                      "measurement_noise": cfg["noise_parameters"]["measurement_noise"], # and we know the measurement noise of our detector?
                                     }
     model = MelatosPTAModel(observations.Npulsars + 1,
                             observations.Npulsars,
@@ -70,26 +73,27 @@ if __name__=="__main__":
 
     #Then run it for a particular set of parameters 
     parameters = {"omega":   observations.omega_GW,
-                "gamma":   observations.spindown_gamma[0],
-                "n":       observations.spindown_n[0],
-                "dec_gw":  cfg["GW_parameters"]["dec_GW"],
-                "ra_gw":   cfg["GW_parameters"]["ra_GW"],
-                "psi_gw":  cfg["GW_parameters"]["psi_GW"],
-                "Agw":     observations.Agw,
-                "iota_gw": cfg["GW_parameters"]["iota"],
-                "phi0":    cfg["GW_parameters"]["phase_normalisation"]
+                "gamma":     observations.spindown_gamma[0],
+                "n":         observations.spindown_n[0],
+                "dec_gw":    cfg["GW_parameters"]["dec_GW"],
+                "ra_gw":     cfg["GW_parameters"]["ra_GW"],
+                "psi_gw":    cfg["GW_parameters"]["psi_GW"],
+                "Agw":       observations.Agw,
+                "iota_gw":   cfg["GW_parameters"]["iota"],
+                "phi0":      cfg["GW_parameters"]["phase_normalisation"]
                 }
 
 
 
 
-    
-
     model_likelihood = KF.ll_on_data(parameters,"1.0")
-    #observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
+    observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
+    #observations.plot_observations(psr_index=2,KF_predictions = None) #Can plot this
+
+   
 
     null_likelihood = KF.ll_on_data(parameters,"null")
-    #observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
+    observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
 
 
     print("model likelihood", model_likelihood)
