@@ -20,7 +20,7 @@ if __name__=="__main__":
     #multiprocessing.set_start_method("fork") #These lines are needed on macOS since the default start method is "spawn" which doesn't work well with Bilby
 
 
-    np.random.seed(1234)
+    np.random.seed(2**17)
 
 
     #First, let's create some synthetic data.
@@ -35,19 +35,6 @@ if __name__=="__main__":
 
     
 
-
-
-    np.save("obs1.npy", observations.observations)
-
-    # sigma = np.std(observations.observations[:,0])  
-    # W = 1/cfg["GW_parameters"]["omega_GW"]
-    # RHS = W/sigma
-
-    
-    # kappa = RHS**2 - 1
-    # print(kappa)
-    # sys.exit()
-
     #Now initialise the state-space model to be used with the UKF
     dictionary_of_known_quantities = {"pulsar_directions": observations.q,                              # we know the pulsar directions
                                       "pulsar_distances":  observations.pulsar_distances,               # for now lets say we also know their distances. In reality we have some constrained prior
@@ -59,10 +46,6 @@ if __name__=="__main__":
 
 
 
-
-
-
-    
 
     #Now let's run the UKF on this data
 
@@ -89,7 +72,7 @@ if __name__=="__main__":
 
 
     model_likelihood = KF.ll_on_data(parameters,"1.0")
-    #observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
+    observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
     #observations.plot_observations(psr_index=2,KF_predictions = None) #Can plot this
 
    
@@ -106,11 +89,11 @@ if __name__=="__main__":
 
 
 
-    #print(f"Test_statistic is {test_statistic} compared to a target of 14 at a 5% tolerance")
+    print(f"Test_statistic is {test_statistic} compared to a target of 14 at a 5% tolerance")
     bayes_factor = model_likelihood - null_likelihood
 
 
-    print("Likelihood ratio:", bayes_factor)
+    #print("Likelihood ratio:", bayes_factor)
 
 
     #observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this

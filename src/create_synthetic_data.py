@@ -45,7 +45,7 @@ class PulsarFrequencyObservations:
 
 
 
-        print(np.random.get_state()[1][0])
+       
 
 
         #-Pulsars
@@ -113,6 +113,7 @@ class PulsarFrequencyObservations:
         rng = np.random.default_rng(seed=np.random.get_state()[1][0])
         rng.normal()
         self.state_frequency = sdeint.itoint(self._frequency_ODE_f,self._frequency_ODE_g, self.f_psr, self.t,generator=rng)
+        #self.state_frequency = sdeint.itoint(self._frequency_ODE_f,self._frequency_ODE_g, self.f_psr, self.t)
 
  
         #The GW phase timeseries is trivial for a monochromatic source
@@ -189,8 +190,6 @@ class PulsarFrequencyObservations:
 
 
         #Generate some measurement noise...
-        print(np.random.get_state()[1][0])
-
         measurement_noise = np.random.normal(0, self.measurement_noise,f_measured.shape).astype(NF) # Measurement noise
         
         #...and add it to every observation

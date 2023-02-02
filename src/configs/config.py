@@ -27,7 +27,7 @@ canonical = {
          "iota":                NF(0.0),
          "dec_GW":              NF(0.0),
          "ra_GW":               NF(1.0),
-         "h0":                  NF(1e-16)
+         "h0":                  NF(1e-13)
           },
 
 
