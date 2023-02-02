@@ -75,7 +75,7 @@ class UnscentedKalmanFilter:
 
 
         P_predicted = np.dot(y.T,np.dot(np.diag(self.Wc),  y))
-        P_predicted = 0.5*(P_predicted + P_predicted.T) #+ 1e-16*np.eye(len(P_predicted)) # Enforce symmetry of the covariance matrix
+       #P_predicted = 0.5*(P_predicted + P_predicted.T) #+ 1e-16*np.eye(len(P_predicted)) # Enforce symmetry of the covariance matrix
         
         # i = 1
         # j = 2
@@ -247,12 +247,9 @@ class UnscentedKalmanFilter:
 
         if measurement_model == "null":
             self.H_function       = self.H_noise
-            print("Using the null measurement")
         else:
             self.H_function       = self.H_measure
 
-
-        print("Welcome to LL on data")
 
         #Initialize the model
         self.initialise_model(parameters)

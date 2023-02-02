@@ -22,6 +22,7 @@ class PulsarFrequencyObservations:
         self.t = t 
         self.dt = t[1] - t[0]
 
+
     def _frequency_ODE_f(self,x,t):
         return -self.spindown_gamma * x**self.spindown_n
 
@@ -39,11 +40,12 @@ class PulsarFrequencyObservations:
         self.psi_gw              = GW_parameters["psi_GW"]
         self.iota_gw             = GW_parameters["iota"] 
         self.dec_gw              = GW_parameters["dec_GW"]  
-        self.ra_gw                = GW_parameters["ra_GW"]
-        self.Agw = GW_parameters["h0"]
+        self.ra_gw               = GW_parameters["ra_GW"]
+        self.Agw                 = GW_parameters["h0"]
 
 
 
+        print(np.random.get_state()[1][0])
 
 
         #-Pulsars
@@ -108,9 +110,10 @@ class PulsarFrequencyObservations:
         print(f"The magnitude of the GW strain using these parameters is: {self.Agw}")
 
         #Get the evolution of the intrinsic pulsar frequency by solving the Ito integral
-        self.state_frequency = sdeint.itoint(self._frequency_ODE_f,self._frequency_ODE_g, self.f_psr, self.t)
+        rng = np.random.default_rng(seed=np.random.get_state()[1][0])
+        rng.normal()
+        self.state_frequency = sdeint.itoint(self._frequency_ODE_f,self._frequency_ODE_g, self.f_psr, self.t,generator=rng)
 
-  
  
         #The GW phase timeseries is trivial for a monochromatic source
         self.state_phase = self.omega_GW*self.t + self.phase_normalisation
@@ -178,7 +181,7 @@ class PulsarFrequencyObservations:
             
             dot_product = 1 + np.dot(GW_direction_vector,qvec)
             
-            GW_factor = np.real(1.0 - 0.5*h_scalar/dot_product *(1 - np.exp(1j*self.omega_GW*d*dot_product/c)))
+            GW_factor = np.real(1 - NF(0.5)*h_scalar/dot_product *(1 - np.exp(1j*self.omega_GW*d*dot_product/c)))
 
 
             #print("GW_factor",k, np.max(GW_factor),np.min(GW_factor))
@@ -186,6 +189,8 @@ class PulsarFrequencyObservations:
 
 
         #Generate some measurement noise...
+        print(np.random.get_state()[1][0])
+
         measurement_noise = np.random.normal(0, self.measurement_noise,f_measured.shape).astype(NF) # Measurement noise
         
         #...and add it to every observation
@@ -266,6 +271,40 @@ class PulsarFrequencyObservations:
         plt.subplots_adjust(wspace=0.1, hspace=0.1)
         plt.show()
 
+
+
+
+
+    def plot_measurement_frequency(self,psr_index):
+
+
+        h,w = 10,10
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(h,w),sharex=True)
+        
+        tplot = self.t / (60*60*24*365)
+
+        if psr_index is None:
+            normalized = self.observations -self.observations[0,:]
+            ax.plot(tplot,normalized)
+            ax.set_ylabel(r'$f_m$ [normalised]')
+
+            #print(np.unravel_index(normalized.argmin(), normalized.shape))
+
+            
+
+
+        else:
+            ax.plot(tplot,self.observations[:,psr_index])
+            print("The change in frequency was:", np.max(self.observations[:,psr_index])-np.min(self.observations[:,psr_index]))
+            ax.set_ylabel(r'$f_m$ [Hz]')
+
+        
+        
+        ax.set_xlabel('t [years]')
+        ax.ticklabel_format(useOffset=False)
+
+       
+        
 
 
 

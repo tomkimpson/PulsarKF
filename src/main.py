@@ -16,11 +16,11 @@ import sys
 if __name__=="__main__":
 
 
-    import multiprocessing
-    multiprocessing.set_start_method("fork") #These lines are needed on macOS since the default start method is "spawn" which doesn't work well with Bilby
+    #import multiprocessing
+    #multiprocessing.set_start_method("fork") #These lines are needed on macOS since the default start method is "spawn" which doesn't work well with Bilby
 
 
-   
+    np.random.seed(1234)
 
 
     #First, let's create some synthetic data.
@@ -36,6 +36,8 @@ if __name__=="__main__":
     
 
 
+
+    np.save("obs1.npy", observations.observations)
 
     # sigma = np.std(observations.observations[:,0])  
     # W = 1/cfg["GW_parameters"]["omega_GW"]
@@ -60,7 +62,7 @@ if __name__=="__main__":
 
 
 
-
+    
 
     #Now let's run the UKF on this data
 
@@ -87,7 +89,7 @@ if __name__=="__main__":
 
 
     model_likelihood = KF.ll_on_data(parameters,"1.0")
-    observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
+    #observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
     #observations.plot_observations(psr_index=2,KF_predictions = None) #Can plot this
 
    
@@ -99,7 +101,12 @@ if __name__=="__main__":
     print("model likelihood", model_likelihood)
     print("null likelihood", null_likelihood)
 
+    test_statistic = 2 * (model_likelihood - null_likelihood)
 
+
+
+
+    #print(f"Test_statistic is {test_statistic} compared to a target of 14 at a 5% tolerance")
     bayes_factor = model_likelihood - null_likelihood
 
 
