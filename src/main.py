@@ -34,6 +34,8 @@ if __name__=="__main__":
                                      cfg["noise_parameters"])  # generate the observations. You can also plot this as e.g. observations.plot_observations(psr_index=2,KF_predictions = None) 
 
     
+    #observations.plot_observations(psr_index=2,KF_predictions = None) #Can plot this
+    #sys.exit()
 
     #Now initialise the state-space model to be used with the UKF
     dictionary_of_known_quantities = {"pulsar_directions": observations.q,                              # we know the pulsar directions
@@ -72,17 +74,25 @@ if __name__=="__main__":
 
 
     model_likelihood = KF.ll_on_data(parameters,"1.0")
-    observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
-    #observations.plot_observations(psr_index=2,KF_predictions = None) #Can plot this
+    #observations.plot_observations(psr_index=2,KF_predictions = KF.state_array) #Can plot this
+    observations.plot_observations(psr_index=2,KF_predictions = KF.state_array) #Can plot this
 
-   
+    print('-----------------------------------------------------------------')
+ 
+    
+
+    #observations.plot_states(2,KF.state_array,KF.covariance_array)
 
     null_likelihood = KF.ll_on_data(parameters,"null")
-    observations.plot_observations(psr_index=2,KF_predictions = KF.IO_array) #Can plot this
+    observations.plot_observations(psr_index=2,KF_predictions = KF.state_array) #Can plot this
 
 
     print("model likelihood", model_likelihood)
     print("null likelihood", null_likelihood)
+    print("Delta L = ",model_likelihood - null_likelihood)
+
+
+    sys.exit()
 
     test_statistic = 2 * (model_likelihood - null_likelihood)
 

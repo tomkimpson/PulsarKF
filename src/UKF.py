@@ -150,7 +150,7 @@ class UnscentedKalmanFilter:
 
         Updates self.Wm, self.Wc
         """
-
+       
           
         lambda_ = self.alpha**2 *(self.L+self.kappa) - self.L # scaling parameter used in calculating the weights
 
@@ -254,17 +254,25 @@ class UnscentedKalmanFilter:
         #Initialize the model
         self.initialise_model(parameters)
 
-        #Initialise the array that will store the results
-        self.IO_array = np.zeros((len(self.observations),self.L),dtype=NF)
+        #Initialise the array that will store the state results
+        self.state_array = np.zeros((len(self.observations),self.L),dtype=NF)
+
+        #...and the covariance
+        self.covariance_array = np.zeros((len(self.observations),self.L,self.L),dtype=NF)
+
+
 
         #Initialise x and P
         self.x    = np.ones(self.L,dtype=NF) # a column vector, length L
         self.x[0] = parameters["phi0"]       # this is the only place this parameter comes in
 
-        self.x[1:self.L] = self.observations[0,:] # guess that the intrinsic frequency is the same as the measured frequancy
+        self.x[1:self.L] = self.observations[0,:] # guess that the intrinsic frequency is the same as the measured frequency
 
-        self.P = np.eye(self.L,dtype=NF)*1e-3#*100 # a square matrix, dim(L x L). #How to initialise?
-        self.P[0,0] = 9e-16
+        self.P = np.eye(self.L,dtype=NF)*1e-3 #self.R*100 # a square matrix, dim(L x L). #How to initialise?
+        
+        
+        
+        self.P[0,0] = 9e-16 #The uncertainty on the initial phase IS very small - we "know" it exactly as a parameter 
 
  
 
@@ -354,7 +362,8 @@ class UnscentedKalmanFilter:
             self._update(observation) 
 
             #Do some IO
-            self.IO_array[i,:] = self.x
+            self.state_array[i,:] = self.x
+            self.covariance_array[i,:,:] = self.P
             
 
             i += 1

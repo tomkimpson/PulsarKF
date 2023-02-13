@@ -7,6 +7,7 @@ from decimal import *
 import sys 
 from configs.config import NF
 import pandas as pd
+import scipy
 class PulsarFrequencyObservations:
 
 
@@ -61,7 +62,7 @@ class PulsarFrequencyObservations:
             self.spindown_gamma   = df["gamma"].to_numpy(dtype=NF)
             self.spindown_n       = df["n"].to_numpy(dtype=int)
 
-            #self.spindown_gamma = self.spindown_gamma * 0.0 #
+            self.spindown_gamma = self.spindown_gamma * 0.0 #
         else:
             self.f_psr            = pulsar_parameters["f_psr"]
             self.pulsar_distances = pulsar_parameters["pulsar_distances"] * 1e3 * pc #from kpc to m
@@ -116,6 +117,12 @@ class PulsarFrequencyObservations:
         #self.state_frequency = sdeint.itoint(self._frequency_ODE_f,self._frequency_ODE_g, self.f_psr, self.t)
 
  
+        # i = 9
+        # fi = self.state_frequency[:,i]
+        # print(np.max(fi) - np.min(fi),self.spindown_gamma[i],self.spindown_n[i])
+        # sys.exit()
+        # print()
+
         #The GW phase timeseries is trivial for a monochromatic source
         self.state_phase = self.omega_GW*self.t + self.phase_normalisation
   
@@ -182,6 +189,7 @@ class PulsarFrequencyObservations:
             
             dot_product = 1 + np.dot(GW_direction_vector,qvec)
             
+            #print("HERE:",np.max(abs(np.real(NF(0.5)*h_scalar/dot_product *(1 - np.exp(1j*self.omega_GW*d*dot_product/c))))))
             GW_factor = np.real(1 - NF(0.5)*h_scalar/dot_product *(1 - np.exp(1j*self.omega_GW*d*dot_product/c)))
 
 
@@ -232,7 +240,9 @@ class PulsarFrequencyObservations:
             if KF_predictions is not None:
                 ax2.plot(tplot,KF_predictions[:,psr_index+1]) #the 0th pulsar corresponds to the 1st element of the state
 
-            ax2.set_ylim(np.min(self.state_frequency[:,psr_index]),np.max(self.state_frequency[:,psr_index]))
+            ax2.set_ylim(np.min(KF_predictions[:,psr_index+1]),np.max(KF_predictions[:,psr_index+1]))
+            print("The mean error in the state prediction is:",np.mean(np.abs(self.state_frequency[:,psr_index] - KF_predictions[:,psr_index+1])))
+            
             #ax2.set_ylim((np.min(self.state_frequency[:,psr_index]),np.max(self.state_frequency[:,psr_index])))
             #ax2.set_ylim(363.7,364.2)
 
@@ -243,8 +253,31 @@ class PulsarFrequencyObservations:
         if psr_index is None:
             ax3.plot(tplot,self.observations)
         else:
-            ax3.plot(tplot,self.observations[:,psr_index]*1e6)
-            print("Difference:", max(self.observations[:,psr_index]) - min(self.observations[:,psr_index]))
+            ax3.plot(tplot,self.observations[:,psr_index])
+
+
+
+
+            #integral = scipy.integrate.simps(self.observations[:,psr_index],self.t)
+            
+            #for i in range(len(self.t)):
+
+             #   zt = scipy.integrate.simps(self.observations[0:i,psr_index],self.t[0:i])
+
+
+            
+            #print(integral)
+            
+            #ax3.plot(tplot,integral)
+
+
+
+
+
+
+
+            print("Difference in the state frequency:", max(self.state_frequency[:,psr_index+1]) - min(self.state_frequency[:,psr_index+1]))
+            print("Difference in the observed frequency:", max(self.observations[:,psr_index]) - min(self.observations[:,psr_index]))
             #g = np.gradient(self.observations[:,psr_index])
             #g = g / g[0] * self.observations[0,psr_index]
             #ax3.plot(tplot,g)
@@ -255,10 +288,10 @@ class PulsarFrequencyObservations:
             ax4.plot(tplot,self.observations-self.state_frequency)
         else:
             #print(self.observations[:,psr_index] - self.state_frequency[:,psr_index])
-            #ax4.plot(tplot,self.observations[:,psr_index] - KF_predictions[:,psr_index+1],label='prediction')
-            print("mean state error:", np.mean(self.state_frequency[:,psr_index] - KF_predictions[:,psr_index+1]))
+            ax4.plot(tplot,self.observations[:,psr_index] - KF_predictions[:,psr_index+1],label='prediction')
+            #print("mean state error:", np.mean(self.state_frequency[:,psr_index] - KF_predictions[:,psr_index+1]))
             #ax4.plot(tplot,self.observations[:,psr_index] - self.state_frequency[:,psr_index],label='truth')
-            ax4.plot(tplot,self.state_frequency[:,psr_index] - KF_predictions[:,psr_index+1],label='truth')
+            #ax4.plot(tplot,self.state_frequency[:,psr_index] - KF_predictions[:,psr_index+1],label='truth')
 
             
         ax4.legend()
@@ -306,5 +339,39 @@ class PulsarFrequencyObservations:
         
 
 
+    def plot_states(self,psr_index,state_predictions,covariance):
 
 
+        h,w = 10,10
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(h,w),sharex=True)
+        
+        tplot = self.t / (60*60*24*365)
+
+
+        covar = np.sqrt(covariance[:,psr_index+1,psr_index+1])
+        
+
+        
+        #ax.plot(tplot,self.state_frequency[:,psr_index],label="truth")
+        #ax.plot(tplot,state_predictions[:,psr_index+1],label="prediction")
+        #ax.fill_between(tplot, state_predictions[:,psr_index+1]-covar, state_predictions[:,psr_index+1]+covar,color='0.5')
+        ax.plot(covar)
+            
+        #print(np.min(covar),np.max(covar))
+        ax.set_ylim(0.98e-09, 1.1611024135164071637e-09)
+            #print("The change in frequency was:", np.max(self.observations[:,psr_index])-np.min(self.observations[:,psr_index]))
+            #ax.set_ylabel(r'$f_m$ [Hz]')
+
+        
+        
+        # ax.set_xlabel('t [years]')
+        # ax.ticklabel_format(useOffset=False)
+        ax.legend()
+        plt.show()
+
+       
+        
+
+            # ax2.plot(tplot,self.state_frequency[:,psr_index])
+            # if KF_predictions is not None:
+            #     ax2.plot(tplot,KF_predictions[:,psr_index+1]) #the 0th pulsar corresponds to the 1st element of the state

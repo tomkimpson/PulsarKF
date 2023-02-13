@@ -164,7 +164,7 @@ class MelatosPTAModel:
         for i in range(1,self.dims_x):
         #for i in range(self.dims_x):
 
-            Q[i,i] = 1e-18 #1e-3#0.1 #1e1-14
+            Q[i,i] = 1e-15 #1e-3#0.1 #1e1-14
 
       
         return Q 
