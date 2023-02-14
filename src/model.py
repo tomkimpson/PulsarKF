@@ -35,7 +35,7 @@ class MelatosPTAModel:
 
 
         self.q_ij = np.zeros((self.N_pulsar ,9),dtype=NF) # this defines an object which for each pulsar direction (x,y,z) defines the products (xx,xy,xz,yx,yy,yz,zx,zy,zz)
-        for i in range(self.N_pulsar ):
+        for i in range(self.N_pulsar):
             row = self.q[i,:].reshape(3,1)
             
             col = row.reshape(1,3)
@@ -59,10 +59,21 @@ class MelatosPTAModel:
 
         #GW quantities
         self.omega               = parameters["omega"]
+        self.phi0                = parameters["phi0"]
         self.mGW,self.nGW        = principal_axes(NF(np.pi/2) - parameters["dec_gw"],parameters["ra_gw"],parameters["psi_gw"])
-        self.eplus,self.ecross   = polarisation_basis(self.mGW,self.nGW) 
         self.GW_direction_vector = np.cross(self.mGW,self.nGW)
         self.hp,self.hx          = h_amplitudes(parameters["Agw"],parameters["iota_gw"]) 
+        self.eplus,self.ecross   = polarisation_basis(self.mGW,self.nGW) 
+        self.Hij                 = (self.hp * self.eplus + self.hx * self.ecross).flatten()#.reshape(9,1)
+        
+        
+        self.hscalar             = np.zeros(self.N_pulsar)
+        for i in range(len(self.hscalar)): #todo: vectorise this!
+            self.hscalar[i] = np.dot(self.Hij,self.q_ij[i,:])
+            
+        
+        
+                
 
         #PSR quantities
         self.gamma = parameters["gamma"]
@@ -70,16 +81,14 @@ class MelatosPTAModel:
 
 
         #Reshape
-        self.eplus_flat = self.eplus.reshape(9,1)  #useful for vectorised operations rather than the usual 3x3 shape 
-        self.ecross_flat = self.ecross.reshape(9,1)
+        #self.eplus_flat = self.eplus.reshape(9,1)  #useful for vectorised operations rather than the usual 3x3 shape 
+        #self.ecross_flat = self.ecross.reshape(9,1)
 
 
         #Useful quantities
         self.dot_product = 1 + np.dot(self.GW_direction_vector,self.q.T)
 
-
-
-        self.H_coefficient = np.real((1 - np.exp(1j*self.omega*self.pulsar_distances*self.dot_product/c)) / (2*self.dot_product))
+        self.H_coefficient = (1 - np.exp(1j*self.omega*self.pulsar_distances*self.dot_product/c)) / (2*self.dot_product)
 
 
 
@@ -94,18 +103,21 @@ class MelatosPTAModel:
         The state here is actually the sigma points
         """
 
-        #Declare parameters for this function
-        nrows = x.shape[0]
+        # #Declare parameters for this function
+        # nrows = x.shape[0]
 
         
-        df = np.zeros_like(x,dtype=NF) #the output should have the same shape as the input, `x`
-        df[:,0] = np.full(nrows,self.omega)
-        df[:,1:] = -self.gamma * x[:,1:]**self.n
+        # df = np.zeros_like(x,dtype=NF) #the output should have the same shape as the input, `x`
+        # df[:,0] = np.full(nrows,self.omega)
+        # df[:,1:] = -self.gamma * x[:,1:]**self.n
+
+
+        df = -self.gamma*x**self.n
 
    
         return x + dt*df #euler step
 
-    def H_function(self,x):
+    def H_function(self,x,t):
 
         """
         Measurement function.
@@ -115,26 +127,17 @@ class MelatosPTAModel:
         The state here is actually the sigma points
         """
 
-          
-        #Get the hplus and hcross strains for each 2L + 1 phase 
-        hplus,hcross        = self.hp*np.cos(x[:,0]),self.hx*np.sin(x[:,0]) # The time varying plus and cross GW strains
-
-
-        hplus = hplus.reshape(1,len(hplus))
-        hcross = hcross.reshape(1,len(hcross)) #can we avoid these reshapes?
+        print("H_function with t = ", t)
        
 
-        
+        GW_factor = np.real(NF(1.0) - self.hscalar * np.exp(-1j*self.omega*t*(self.dot_product) + self.phi0)*self.H_coefficient)
 
-        h_ij      = np.dot(self.eplus_flat,hplus) + np.dot(self.ecross_flat, hcross) # (9,2L+1)
-        hscalar   = np.dot(h_ij.T, self.q_ij.T)
-        GW_factor = 1.0 - hscalar*self.H_coefficient
-        fmeasured = x[:,1:]  * GW_factor
-        
- 
+        fmeasured = x * GW_factor
+    
+
         return fmeasured
 
-    def null_measurement_function(self,x):
+    def null_measurement_function(self,x,t):
 
         """
         Assume there is NO gravitational wave.
@@ -142,7 +145,7 @@ class MelatosPTAModel:
         This function just returns the measured states
         """
 
-        return x[:,1:] 
+        return x
     
     def Q_function(self,x,dt):
 

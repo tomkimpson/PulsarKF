@@ -28,6 +28,7 @@ class UnscentedKalmanFilter:
         
         self.observations = observations.observations # The actual noisy data recorded by an observer
 
+        self.t0 = observations.t[0] 
         self.dt = observations.dt # Currently assumes all observations are equally spaced by dt, so dt is not indexed
         self.L = model.dims_x     # dimension of hidden states
         
@@ -260,32 +261,27 @@ class UnscentedKalmanFilter:
         #...and the covariance
         self.covariance_array = np.zeros((len(self.observations),self.L,self.L),dtype=NF)
 
-
+        
 
         #Initialise x and P
-        self.x    = np.ones(self.L,dtype=NF) # a column vector, length L
-        self.x[0] = parameters["phi0"]       # this is the only place this parameter comes in
-
-        self.x[1:self.L] = self.observations[0,:] # guess that the intrinsic frequency is the same as the measured frequency
-
-        self.P = np.eye(self.L,dtype=NF)*1e-3 #self.R*100 # a square matrix, dim(L x L). #How to initialise?
+        self.x= self.observations[0,:] # guess that the intrinsic frequency is the same as the measured frequency
+        self.P = np.eye(self.L,dtype=NF)*1e-3 #self.R*100 # a square matrix, dim(L x L). # How to initialise?
         
         
         
-        self.P[0,0] = 9e-16 #The uncertainty on the initial phase IS very small - we "know" it exactly as a parameter 
 
- 
-
-        self.S = la.cholesky(self.P, check_finite=True)  #Cholesky is much faster than scipy.linalg.sqrtm. Note that this is float64 not float128
+        #self.S = la.cholesky(self.P, check_finite=True)  #Cholesky is much faster than scipy.linalg.sqrtm. Note that this is float64 not float128
         #print(self.S)
         #sys.exit()
 
 
-
-
-
         #Initialise the likelihood
         self.ll = 0
+
+
+        #Initialise the time
+        self.t = self.t0
+        print("initial time", self.t)
 
         i = 0 # a useful counter
         for observation in self.observations:
@@ -349,7 +345,7 @@ class UnscentedKalmanFilter:
             
             # 2.4 Evolve these new sigma vectors according to the measurement function
             #--- note that the dimensions of self.sigma_points_x and  self.sigma_points_y are different!
-            self.sigma_points_y = self.H_function(self.chi) # this is 4th step in time update. 
+            self.sigma_points_y = self.H_function(self.chi,self.t) # this is 4th step in time update. 
            
 
             # 2.5 Weighted state predictions and covariance
@@ -368,6 +364,7 @@ class UnscentedKalmanFilter:
 
             i += 1
 
+            self.t += self.dt 
 
             #if i >2:
                # sys.exit("TK EXIT")
