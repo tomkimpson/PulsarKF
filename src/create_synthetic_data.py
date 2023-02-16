@@ -242,7 +242,7 @@ class PulsarFrequencyObservations:
 
 
 
-    def plot_observations(self,psr_index,KF_predictions):
+    def plot_observations(self,psr_index,KF_predictions,savefig):
 
 
         """
@@ -251,88 +251,51 @@ class PulsarFrequencyObservations:
         """
 
         h,w = 10,10
-        rows = 4
+        rows = 2
         cols = 1
-        fig, (ax1,ax2,ax3,ax4) = plt.subplots(nrows=rows, ncols=cols, figsize=(h,w),sharex=True)
+        fig, (ax2,ax3) = plt.subplots(nrows=rows, ncols=cols, figsize=(h,w),sharex=True)
         
         tplot = self.t / (60*60*24*365)
 
-        #GW phase
-        # ax1.plot(tplot,self.state_phase)
-        # if KF_predictions is not None:
-        #     ax1.plot(tplot,KF_predictions[:,0])
-        # ax1.set_ylabel(r'$\Phi$')
-
         #Intrinsic pulsar frequency
         if psr_index is None:
-            ax2.plot(tplot,self.state_frequency)
+            ax2.plot(tplot,self.state_frequency,label="truth")
             if KF_predictions is not None:
-                ax2.plot(tplot,KF_predictions[:,1:]) #exlude the phase
+                ax2.plot(tplot,KF_predictions,label="prediction") 
 
         else:
-            ax2.plot(tplot,self.state_frequency[:,psr_index])
+            ax2.plot(tplot,self.state_frequency[:,psr_index],label="truth")
             if KF_predictions is not None:
-                ax2.plot(tplot,KF_predictions[:,psr_index+1]) #the 0th pulsar corresponds to the 1st element of the state
+                ax2.plot(tplot,KF_predictions[:,psr_index],label="prediction") #the 0th pulsar corresponds to the 1st element of the state
 
-            ax2.set_ylim(np.min(KF_predictions[:,psr_index+1]),np.max(KF_predictions[:,psr_index+1]))
-            print("The mean error in the state prediction is:",np.mean(np.abs(self.state_frequency[:,psr_index] - KF_predictions[:,psr_index+1])))
+            #ax2.set_ylim(np.min(KF_predictions[:,psr_index+1]),np.max(KF_predictions[:,psr_index+1]))
+            #diff =   np.abs(self.state_frequency[:,psr_index] - KF_predictions[:,psr_index]) / self.state_frequency[:,psr_index]
+
+            diff = np.abs(self.state_frequency[:,psr_index] - KF_predictions[:,psr_index])
+
+            print("The mean error in the state prediction is:",np.sum(diff))
             
-            #ax2.set_ylim((np.min(self.state_frequency[:,psr_index]),np.max(self.state_frequency[:,psr_index])))
-            #ax2.set_ylim(363.7,364.2)
-
-
         ax2.set_ylabel(r'$f_p$ [Hz]')
+        ax2.legend()
 
         #Measured pulsar frequency
         if psr_index is None:
-            ax3.plot(tplot,self.observations)
+            ax3.plot(tplot,self.observations,c='C2')
         else:
-            ax3.plot(tplot,self.observations[:,psr_index])
-
-
-
-
-            #integral = scipy.integrate.simps(self.observations[:,psr_index],self.t)
-            
-            #for i in range(len(self.t)):
-
-             #   zt = scipy.integrate.simps(self.observations[0:i,psr_index],self.t[0:i])
-
-
-            
-            #print(integral)
-            
-            #ax3.plot(tplot,integral)
-
-
-
-
+            ax3.plot(tplot,self.observations[:,psr_index],c='C2')
 
 
 
             print("Difference in the state frequency:", max(self.state_frequency[:,psr_index+1]) - min(self.state_frequency[:,psr_index+1]))
             print("Difference in the observed frequency:", max(self.observations[:,psr_index]) - min(self.observations[:,psr_index]))
-            #g = np.gradient(self.observations[:,psr_index])
-            #g = g / g[0] * self.observations[0,psr_index]
-            #ax3.plot(tplot,g)
+            
         ax3.set_ylabel(r'$f_M$ [$\mu$Hz]')
 
-        #Difference
-        if psr_index is None:
-            ax4.plot(tplot,self.observations-self.state_frequency)
-        else:
-            #print(self.observations[:,psr_index] - self.state_frequency[:,psr_index])
-            ax4.plot(tplot,self.observations[:,psr_index] - KF_predictions[:,psr_index+1],label='prediction')
-            #print("mean state error:", np.mean(self.state_frequency[:,psr_index] - KF_predictions[:,psr_index+1]))
-            #ax4.plot(tplot,self.observations[:,psr_index] - self.state_frequency[:,psr_index],label='truth')
-            #ax4.plot(tplot,self.state_frequency[:,psr_index] - KF_predictions[:,psr_index+1],label='truth')
-
-            
-        ax4.legend()
-        
-        ax4.set_ylabel(r'$\Delta$')
-        ax4.set_xlabel('t [years]')
+        ax3.set_xlabel('t [years]')
 
  
         plt.subplots_adjust(wspace=0.1, hspace=0.1)
+
+        if savefig is not None:
+            plt.savefig(savefig,bbox_inches='tight',dpi=300)
         plt.show()

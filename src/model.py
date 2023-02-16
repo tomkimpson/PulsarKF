@@ -127,7 +127,7 @@ class MelatosPTAModel:
         The state here is actually the sigma points
         """
 
-        print("H_function with t = ", t)
+      
        
 
         GW_factor = np.real(NF(1.0) - self.hscalar * np.exp(-1j*self.omega*t*(self.dot_product) + self.phi0)*self.H_coefficient)
@@ -167,7 +167,9 @@ class MelatosPTAModel:
         for i in range(1,self.dims_x):
         #for i in range(self.dims_x):
 
-            Q[i,i] = 1e-15 #1e-3#0.1 #1e1-14
+            Q[i,i] = 1e-18 #1e-3#0.1 #1e1-14
+            #Q[i,i] = 1e-13#**2 #1e-3#0.1 #1e1-14
+
 
       
         return Q 

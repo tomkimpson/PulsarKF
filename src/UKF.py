@@ -76,14 +76,9 @@ class UnscentedKalmanFilter:
 
 
         P_predicted = np.dot(y.T,np.dot(np.diag(self.Wc),  y))
-        #P_predicted = 0.5*(P_predicted + P_predicted.T) #+ 1e-16*np.eye(len(P_predicted)) # Enforce symmetry of the covariance matrix
+        P_predicted = 0.5*(P_predicted + P_predicted.T) #+ 1e-16*np.eye(len(P_predicted)) # Enforce symmetry of the covariance matrix
         
-        # i = 1
-        # j = 2
-        # for i in range(len(P_predicted)):
-        #     for j in range(len(P_predicted)):
-        #         print(i,j,P_predicted[i,j],P_predicted[j,i])
-        # sys.exit()
+ 
 
         return x_predicted, P_predicted,y # return y as we will use it later when calculating cross correlation
 
@@ -173,6 +168,8 @@ class UnscentedKalmanFilter:
             self.Wc[i] = 1/(2*(self.L+lambda_ ))
 
 
+
+
         #Also define....
         self.gamma = np.sqrt(self.L + lambda_,dtype=NF)
 
@@ -190,9 +187,9 @@ class UnscentedKalmanFilter:
 
         #print("calculate sigma vectors")
         #Check if the P matrix can be sqrted
-        #epsilon = sys.float_info.epsilon
-        #P_check = 0.5*(P + P.T) + epsilon*np.eye(len(x)) #uncomment these two lines, and comment out P_check=P, if P sqrts are causing issues.
-        P_check = P
+        epsilon = sys.float_info.epsilon
+        P_check = 0.5*(P + P.T) + epsilon*np.eye(len(x)) #uncomment these two lines, and comment out P_check=P, if P sqrts are causing issues.
+        #P_check = P
         
         P_sqrt = la.cholesky(P_check, check_finite=True)  #Cholesky is much faster than scipy.linalg.sqrtm. Note that this is float64 not float128
         
@@ -265,8 +262,10 @@ class UnscentedKalmanFilter:
 
         #Initialise x and P
         self.x= self.observations[0,:] # guess that the intrinsic frequency is the same as the measured frequency
-        self.P = np.eye(self.L,dtype=NF)*1e-3 #self.R*100 # a square matrix, dim(L x L). # How to initialise?
+        self.P = np.eye(self.L,dtype=NF)*1e-6#*self.R*1e9 # a square matrix, dim(L x L). # How to initialise?
         
+        print("The value of self.R is", self.R)
+        #self.P = np.eye(self.L,dtype=NF)*self.R*1e9
         
         
 
