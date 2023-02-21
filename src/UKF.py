@@ -70,13 +70,8 @@ class UnscentedKalmanFilter:
 
 
 
-        
-
-
-
-
         P_predicted = np.dot(y.T,np.dot(np.diag(self.Wc),  y))
-        P_predicted = 0.5*(P_predicted + P_predicted.T) #+ 1e-16*np.eye(len(P_predicted)) # Enforce symmetry of the covariance matrix
+        #P_predicted = 0.5*(P_predicted + P_predicted.T) #+ 1e-16*np.eye(len(P_predicted)) # Enforce symmetry of the covariance matrix
         
  
 
@@ -129,12 +124,17 @@ class UnscentedKalmanFilter:
 
         self.x = self.x_predicted + K @ innovation
         self.P = self.P_xx - K @ self.P_yy @ K.T
+
+
+        self.y_updated = self.y_predicted + K @ innovation
+
         
         #print("Updated uncertainty")
         #sys.exit()
     
         #Also return the likelihood    
         likelihood = -0.5*(np.linalg.slogdet(np.float64(self.P_yy))[1] + innovation.T @ np.linalg.solve(np.float64(self.P_yy), np.float64(innovation))+ len(observation) * np.log(2*np.pi))
+        #print("The likelihood value is:", likelihood)
         self.ll += likelihood
         
     def _calculate_weights(self):
@@ -186,12 +186,15 @@ class UnscentedKalmanFilter:
         """
 
         #print("calculate sigma vectors")
+        #print(P.shape)
         #Check if the P matrix can be sqrted
-        epsilon = sys.float_info.epsilon
-        P_check = 0.5*(P + P.T) + epsilon*np.eye(len(x)) #uncomment these two lines, and comment out P_check=P, if P sqrts are causing issues.
-        #P_check = P
+        #epsilon = sys.float_info.epsilon
+        #epsilon = 1e-6
+        #epsilon = np.finfo(NF).eps
+        #P_check = 0.5*(P + P.T) + epsilon*np.eye(len(x))  # uncomment these two lines, and comment out P_check=P, if P sqrts are causing issues.
+        P_check = P
         
-        P_sqrt = la.cholesky(P_check, check_finite=True)  #Cholesky is much faster than scipy.linalg.sqrtm. Note that this is float64 not float128
+        P_sqrt = la.cholesky(P_check, check_finite=True)  # cholesky is much faster than scipy.linalg.sqrtm. Note that this is float64 not float128
         
 
         
@@ -260,10 +263,21 @@ class UnscentedKalmanFilter:
 
         
 
+        #...and the residuals
+        self.residuals_array = np.zeros((len(self.observations),self.L),dtype=NF) 
+
+
+        print("Initialising y update array for")
+        print(measurement_model)
+        print(self.H_function)
+        self.y_update_array = np.zeros((len(self.observations),self.L),dtype=NF) 
+
+
         #Initialise x and P
         self.x= self.observations[0,:] # guess that the intrinsic frequency is the same as the measured frequency
-        self.P = np.eye(self.L,dtype=NF)*1e-6#*self.R*1e9 # a square matrix, dim(L x L). # How to initialise?
-        
+        #self.P = np.eye(self.L,dtype=NF)*1e-6#*self.R*1e9 # a square matrix, dim(L x L). # How to initialise?
+        self.P = np.eye(self.L,dtype=NF)*self.R*1e9 # a square matrix, dim(L x L). # How to initialise?
+
         print("The value of self.R is", self.R)
         #self.P = np.eye(self.L,dtype=NF)*self.R*1e9
         
@@ -359,6 +373,16 @@ class UnscentedKalmanFilter:
             #Do some IO
             self.state_array[i,:] = self.x
             self.covariance_array[i,:,:] = self.P
+
+            #Also get the residuals
+            y_update = self.H_function(self.x,self.t)
+            p_innv = observation-y_update
+
+
+
+            self.y_update_array[i,:] = y_update
+            self.residuals_array[i,:] = p_innv
+            #self.residuals_array[i,1] = p_innv
             
 
             i += 1
@@ -367,6 +391,10 @@ class UnscentedKalmanFilter:
 
             #if i >2:
                # sys.exit("TK EXIT")
+
+
+
+
         
 
         return self.ll

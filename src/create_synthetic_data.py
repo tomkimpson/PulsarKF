@@ -299,3 +299,63 @@ class PulsarFrequencyObservations:
         if savefig is not None:
             plt.savefig(savefig,bbox_inches='tight',dpi=300)
         plt.show()
+
+
+
+    def plot_residuals(self,psr_index,KF_predictions,savefig):
+
+
+        """
+        Function to plot both the observations and the state predictions of the Kalman filter
+        To plot a parrticular pulsar, provide a psr_index
+        """
+
+        h,w = 10,10
+        rows = 2
+        cols = 1
+        fig, (ax2,ax3) = plt.subplots(nrows=rows, ncols=cols, figsize=(h,w),sharex=True)
+        
+        tplot = self.t / (60*60*24*365)
+
+        #Intrinsic pulsar frequency
+        if psr_index is None:
+            ax2.plot(tplot,self.state_frequency,label="truth")
+            if KF_predictions is not None:
+                ax2.plot(tplot,KF_predictions,label="prediction") 
+
+        else:
+            ax2.plot(tplot,self.state_frequency[:,psr_index],label="truth")
+            if KF_predictions is not None:
+                ax2.plot(tplot,KF_predictions[:,psr_index],label="prediction") #the 0th pulsar corresponds to the 1st element of the state
+
+            #ax2.set_ylim(np.min(KF_predictions[:,psr_index+1]),np.max(KF_predictions[:,psr_index+1]))
+            #diff =   np.abs(self.state_frequency[:,psr_index] - KF_predictions[:,psr_index]) / self.state_frequency[:,psr_index]
+
+            diff = np.abs(self.state_frequency[:,psr_index] - KF_predictions[:,psr_index])
+
+            print("The mean error in the state prediction is:",np.sum(diff))
+            
+        ax2.set_ylabel(r'$f_p$ [Hz]')
+        ax2.legend()
+
+        #Measured pulsar frequency
+        if psr_index is None:
+            ax3.plot(tplot,self.observations,c='C2')
+        else:
+            ax3.plot(tplot,self.observations[:,psr_index],c='C2')
+
+
+
+            print("Difference in the state frequency:", max(self.state_frequency[:,psr_index+1]) - min(self.state_frequency[:,psr_index+1]))
+            print("Difference in the observed frequency:", max(self.observations[:,psr_index]) - min(self.observations[:,psr_index]))
+            
+        ax3.set_ylabel(r'$f_M$ [$\mu$Hz]')
+
+        ax3.set_xlabel('t [years]')
+
+ 
+        plt.subplots_adjust(wspace=0.1, hspace=0.1)
+
+        if savefig is not None:
+            plt.savefig(savefig,bbox_inches='tight',dpi=300)
+        plt.show()

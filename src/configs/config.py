@@ -65,19 +65,22 @@ notebook = {
           },
 
     "GW_parameters": {
-         "omega_GW":            NF(1e-8),
+         "omega_GW":            NF(1e-7),
          "phase_normalisation": NF(0.20),  
          "psi_GW":              NF(2.5),
          "iota":                NF(0.0),
          "dec_GW":              NF(0.0),
          "ra_GW":               NF(1.0),
-         "h0":                  NF(1e-16)
+         "h0":                  NF(1e-8)
           },
 
 
     "noise_parameters":{
-                         "process_noise": NF(1e-13),    #standard deviation of process noise      
+                          "process_noise": NF(1e-13),    #standard deviation of process noise   
                          "measurement_noise": NF(1e-13) #standard deviation gaussian measurement noise.
+   
+                        #"process_noise": NF(0.0),    #standard deviation of process noise  
+                        #"measurement_noise": NF(0.0) #standard deviation gaussian measurement noise.
             },
 
 

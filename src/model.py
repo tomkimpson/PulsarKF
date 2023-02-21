@@ -15,16 +15,17 @@ from configs.config import NF
 class MelatosPTAModel:
 
 
-    def __init__(self,dims_x,dims_z,dictionary_of_known_quantities):
+    def __init__(self,dims_x,dims_z,dictionary_of_known_quantities,f0):
 
 
         self.dims_x = dims_x
         self.dims_z = dims_z
+        self.f0 = f0
         
 
         self.pulsar_distances = dictionary_of_known_quantities["pulsar_distances"] #* 1e3 * pc #from kpc to m
         self.measurement_noise = dictionary_of_known_quantities["measurement_noise"]**2
-        
+        self.process_noise = dictionary_of_known_quantities["process_noise"]**2
         
         
         self.q = dictionary_of_known_quantities["pulsar_directions"]
@@ -162,16 +163,29 @@ class MelatosPTAModel:
 
         """
   
+       
+
+       # value = self.process_noise*dt*(self.gamma*self.n*)
+
+        coefficient = 2*self.gamma*self.n*self.f0**(self.n-1)
+        expo_term = np.exp(-2*self.gamma*self.n*self.f0**(self.n-1) * dt) -1
 
         Q =  np.zeros((self.dims_x,self.dims_x),dtype=NF) 
-        for i in range(1,self.dims_x):
+        for i in range(self.dims_x):
+
+            #Q[i,i] = -self.process_noise*dt*((self.gamma*self.n*x[i]*dt)**2 - 3.0*self.gamma*self.n*x[i]*dt + 3)
+            Q[i,i] = -self.process_noise*expo_term[i]/coefficient[i]
+
         #for i in range(self.dims_x):
 
-            Q[i,i] = 1e-18 #1e-3#0.1 #1e1-14
+            #Q[i,i] = 1e-18 #1e-3#0.1 #1e1-14
             #Q[i,i] = 1e-13#**2 #1e-3#0.1 #1e1-14
 
 
-      
+
+        #print(Q)      
+        #print("VALUE OF Q MATRIX")
+        #print(Q)
         return Q 
 
     def R_function(self): 
